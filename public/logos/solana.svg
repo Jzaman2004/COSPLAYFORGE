@@ -1,0 +1,29 @@
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="solanaGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#14f195;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#9945ff;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Solana Logo -->
+  <rect width="200" height="200" fill="none"/>
+  
+  <!-- Circle guides (invisible) -->
+  <circle cx="100" cy="100" r="90" fill="none" stroke="url(#solanaGrad)" stroke-width="2" opacity="0.3"/>
+  
+  <!-- Solana symbol -->
+  <g transform="translate(100,100)">
+    <!-- Bottom curve -->
+    <path d="M -30 10 Q 0 30 30 10" fill="none" stroke="url(#solanaGrad)" stroke-width="8" stroke-linecap="round"/>
+    
+    <!-- Middle curve -->
+    <path d="M -30 0 Q 0 20 30 0" fill="none" stroke="url(#solanaGrad)" stroke-width="8" stroke-linecap="round"/>
+    
+    <!-- Top curve -->
+    <path d="M -30 -10 Q 0 10 30 -10" fill="none" stroke="url(#solanaGrad)" stroke-width="8" stroke-linecap="round"/>
+  </g>
+  
+  <!-- Text label -->
+  <text x="100" y="190" font-size="12" font-weight="bold" text-anchor="middle" fill="#14f195">SOLANA</text>
+</svg>

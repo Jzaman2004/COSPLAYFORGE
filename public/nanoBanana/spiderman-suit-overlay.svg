@@ -1,0 +1,53 @@
+<svg viewBox="0 0 400 600" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="spidSuit" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ff0000;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#cc0000;stop-opacity:1" />
+    </linearGradient>
+    <pattern id="webPattern" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+      <path d="M0,0 L20,20 M20,0 L0,20" stroke="#000" stroke-width="1" opacity="0.3"/>
+    </pattern>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="400" height="600" fill="#f5f5f5"/>
+  
+  <!-- Head/Mask -->
+  <circle cx="200" cy="100" r="40" fill="url(#spidSuit)"/>
+  <circle cx="190" cy="90" r="6" fill="#000"/>
+  <circle cx="210" cy="90" r="6" fill="#000"/>
+  <!-- Web pattern on face -->
+  <line x1="200" y1="60" x2="200" y2="140" stroke="#000" stroke-width="1" opacity="0.3"/>
+  <circle cx="200" cy="100" r="35" fill="none" stroke="#000" stroke-width="1" opacity="0.2"/>
+  
+  <!-- Body/Suit -->
+  <ellipse cx="200" cy="210" rx="50" ry="70" fill="url(#spidSuit)"/>
+  <rect x="130" y="160" width="140" height="110" fill="url(#webPattern)"/>
+  
+  <!-- Web lines on body -->
+  <path d="M 150 180 Q 200 200 250 180" stroke="#000" stroke-width="1" opacity="0.3"/>
+  <path d="M 150 220 Q 200 240 250 220" stroke="#000" stroke-width="1" opacity="0.3"/>
+  
+  <!-- Left Arm in suit -->
+  <g>
+    <line x1="150" y1="160" x2="100" y2="220" stroke="#ff0000" stroke-width="20" stroke-linecap="round"/>
+    <line x1="150" y1="160" x2="100" y2="220" stroke="#000" stroke-width="1" opacity="0.2"/>
+  </g>
+  
+  <!-- Right Arm in suit -->
+  <g>
+    <line x1="250" y1="160" x2="300" y2="220" stroke="#ff0000" stroke-width="20" stroke-linecap="round"/>
+    <line x1="250" y1="160" x2="300" y2="220" stroke="#000" stroke-width="1" opacity="0.2"/>
+  </g>
+  
+  <!-- Left Leg -->
+  <line x1="175" y1="275" x2="160" y2="420" stroke="#ff0000" stroke-width="20" stroke-linecap="round"/>
+  
+  <!-- Right Leg -->
+  <line x1="225" y1="275" x2="240" y2="420" stroke="#ff0000" stroke-width="20" stroke-linecap="round"/>
+  
+  <!-- Label -->
+  <text x="200" y="550" font-size="14" font-weight="bold" text-anchor="middle" fill="#333">
+    Spider-Man Costume Overlay
+  </text>
+</svg>

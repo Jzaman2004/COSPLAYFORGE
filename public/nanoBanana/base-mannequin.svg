@@ -1,0 +1,49 @@
+<svg viewBox="0 0 400 600" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bodyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#e8e8e8;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#b0b0b0;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="400" height="600" fill="#f5f5f5"/>
+  
+  <!-- Head -->
+  <circle cx="200" cy="100" r="40" fill="url(#bodyGrad)"/>
+  
+  <!-- Neck -->
+  <rect x="185" y="135" width="30" height="25" fill="url(#bodyGrad)"/>
+  
+  <!-- Torso -->
+  <ellipse cx="200" cy="210" rx="50" ry="70" fill="url(#bodyGrad)"/>
+  
+  <!-- Left Arm -->
+  <g>
+    <line x1="150" y1="160" x2="100" y2="220" stroke="#b0b0b0" stroke-width="20" stroke-linecap="round"/>
+    <circle cx="100" cy="220" r="12" fill="url(#bodyGrad)"/>
+  </g>
+  
+  <!-- Right Arm -->
+  <g>
+    <line x1="250" y1="160" x2="300" y2="220" stroke="#b0b0b0" stroke-width="20" stroke-linecap="round"/>
+    <circle cx="300" cy="220" r="12" fill="url(#bodyGrad)"/>
+  </g>
+  
+  <!-- Left Leg -->
+  <g>
+    <line x1="175" y1="275" x2="160" y2="420" stroke="#b0b0b0" stroke-width="20" stroke-linecap="round"/>
+    <circle cx="160" cy="420" r="12" fill="url(#bodyGrad)"/>
+  </g>
+  
+  <!-- Right Leg -->
+  <g>
+    <line x1="225" y1="275" x2="240" y2="420" stroke="#b0b0b0" stroke-width="20" stroke-linecap="round"/>
+    <circle cx="240" cy="420" r="12" fill="url(#bodyGrad)"/>
+  </g>
+  
+  <!-- Label -->
+  <text x="200" y="550" font-size="16" font-weight="bold" text-anchor="middle" fill="#666">
+    Base Mannequin • Ready for Overlay
+  </text>
+</svg>

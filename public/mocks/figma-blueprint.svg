@@ -1,0 +1,111 @@
+<svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1a2e;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0f3460;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1200" height="800" fill="url(#bgGrad)"/>
+  
+  <!-- Title -->
+  <text x="60" y="50" font-size="32" font-weight="bold" fill="#00ffff">Saitama Cosplay Blueprint</text>
+  <text x="60" y="85" font-size="14" fill="#00ff00">Figma Design System • All Layers</text>
+  
+  <!-- Left Panel - Layers -->
+  <rect x="30" y="120" width="280" height="650" fill="#0f3460" stroke="#00ffff" stroke-width="1" rx="5"/>
+  
+  <text x="60" y="155" font-size="14" font-weight="bold" fill="#00ffff">LAYERS</text>
+  
+  <!-- Layer items -->
+  <g id="layer1" opacity="0.9">
+    <rect x="50" y="175" width="240" height="35" fill="#1a4d6d" rx="3"/>
+    <text x="65" y="200" font-size="12" font-weight="bold" fill="#00ffff">📁 Helmet_Base</text>
+  </g>
+  
+  <g id="layer2" opacity="0.8">
+    <rect x="50" y="220" width="240" height="35" fill="#1a4d6d" rx="3"/>
+    <text x="65" y="245" font-size="12" fill="#00ffff">├─ Paint_Mask</text>
+  </g>
+  
+  <g id="layer3" opacity="0.8">
+    <rect x="50" y="265" width="240" height="35" fill="#1a4d6d" rx="3"/>
+    <text x="65" y="290" font-size="12" fill="#00ffff">├─ Ventilation_Ports</text>
+  </g>
+  
+  <g id="layer4" opacity="0.8">
+    <rect x="50" y="310" width="240" height="35" fill="#1a4d6d" rx="3"/>
+    <text x="65" y="335" font-size="12" fill="#00ffff">├─ Cape_Pattern</text>
+  </g>
+  
+  <g id="layer5" opacity="0.8">
+    <rect x="50" y="355" width="240" height="35" fill="#1a4d6d" rx="3"/>
+    <text x="65" y="380" font-size="12" fill="#00ffff">├─ Seam_Lines</text>
+  </g>
+  
+  <g id="layer6" opacity="0.8">
+    <rect x="50" y="400" width="240" height="35" fill="#1a4d6d" rx="3"/>
+    <text x="65" y="425" font-size="12" fill="#00ffff">└─ Material_Annotations</text>
+  </g>
+  
+  <!-- Center - Canvas Preview -->
+  <rect x="330" y="120" width="550" height="650" fill="#0f2540" stroke="#00ffff" stroke-width="2" rx="5"/>
+  
+  <!-- Design preview placeholder -->
+  <rect x="360" y="150" width="490" height="420" fill="#1a4d6d" rx="3" opacity="0.5"/>
+  
+  <text x="605" y="350" font-size="16" text-anchor="middle" fill="#00ffff" opacity="0.6">
+    Blueprint Preview Area
+  </text>
+  
+  <!-- Grid pattern -->
+  <g stroke="#00ffff" stroke-width="0.5" opacity="0.1">
+    <line x1="360" y1="150" x2="360" y2="570"/>
+    <line x1="440" y1="150" x2="440" y2="570"/>
+    <line x1="520" y1="150" x2="520" y2="570"/>
+    <line x1="600" y1="150" x2="600" y2="570"/>
+    <line x1="680" y1="150" x2="680" y2="570"/>
+    <line x1="760" y1="150" x2="760" y2="570"/>
+    <line x1="360" y1="200" x2="850" y2="200"/>
+    <line x1="360" y1="280" x2="850" y2="280"/>
+    <line x1="360" y1="360" x2="850" y2="360"/>
+    <line x1="360" y1="440" x2="850" y2="440"/>
+    <line x1="360" y1="520" x2="850" y2="520"/>
+  </g>
+  
+  <!-- Design specs info -->
+  <text x="360" y="620" font-size="12" font-weight="bold" fill="#00ff00">Design System:</text>
+  <text x="360" y="645" font-size="11" fill="#00ffff">• Color Palette: 8 colors defined</text>
+  <text x="360" y="665" font-size="11" fill="#00ffff">• Typography: 4 font styles</text>
+  <text x="360" y="685" font-size="11" fill="#00ffff">• Components: 12 reusable</text>
+  <text x="360" y="705" font-size="11" fill="#00ffff">• Artboards: 24 total screens</text>
+  <text x="360" y="725" font-size="11" fill="#00ffff">• Shared library: Active</text>
+  
+  <!-- Right Panel - Properties -->
+  <rect x="910" y="120" width="260" height="650" fill="#0f3460" stroke="#00ffff" stroke-width="1" rx="5"/>
+  
+  <text x="940" y="155" font-size="14" font-weight="bold" fill="#00ffff">PROPERTIES</text>
+  
+  <text x="940" y="190" font-size="11" font-weight="bold" fill="#00ff00">Selected: Helmet_Base</text>
+  
+  <g opacity="0.7">
+    <text x="940" y="220" font-size="10" fill="#00ffff">Width: 320px</text>
+    <text x="940" y="240" font-size="10" fill="#00ffff">Height: 420px</text>
+    <text x="940" y="260" font-size="10" fill="#00ffff">X: 160 px</text>
+    <text x="940" y="280" font-size="10" fill="#00ffff">Y: 100 px</text>
+    <text x="940" y="300" font-size="10" fill="#00ffff">Fill: #FFD700</text>
+    <text x="940" y="320" font-size="10" fill="#00ffff">Stroke: None</text>
+    <text x="940" y="340" font-size="10" fill="#00ffff">Radius: 8px</text>
+    <text x="940" y="360" font-size="10" fill="#00ffff">Shadow: Yes</text>
+  </g>
+  
+  <!-- Export options -->
+  <text x="940" y="410" font-size="11" font-weight="bold" fill="#00ff00">EXPORT</text>
+  <rect x="930" y="420" width="230" height="30" fill="#1a4d6d" rx="3" stroke="#00ffff" stroke-width="1"/>
+  <text x="1025" y="441" font-size="11" text-anchor="middle" fill="#00ffff">Export as PNG, SVG, PDF</text>
+  
+  <!-- Last modified -->
+  <text x="940" y="510" font-size="9" fill="#666">Last modified: 2026-02-07 17:30:00</text>
+  <text x="940" y="525" font-size="9" fill="#666">Shared with: @yourteam, @judges</text>
+</svg>

@@ -1,0 +1,191 @@
+import { useNavigate } from 'react-router-dom'
+import { useState } from 'react'
+import { Sparkles, Scan } from 'lucide-react'
+import ComputerUseDemo from '../components/ComputerUseDemo'
+import K2ThinkFlow from '../components/K2ThinkFlow'
+  const [showAgentDemo, setShowAgentDemo] = useState(false)
+import SafetyAlert from '../components/SafetyAlert'
+import { geminiAnalysis } from '../simulation/sponsorMocks'
+
+export default function CharacterScan() {
+  const navigate = useNavigate()
+  const [scanned, setScanned] = useState(false)
+  const [isScanning, setIsScanning] = useState(false)
+
+  const handleScan = () => {
+    setIsScanning(true)
+    setTimeout(() => {
+      setIsScanning(false)
+      setScanned(true)
+    }, 2000)
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 p-8">
+      <div className="max-w-6xl mx-auto">
+        {!scanned ? (
+          // UPLOAD SCREEN
+          <div className="text-center max-w-2xl mx-auto py-16">
+            <h1 className="text-5xl font-bold text-white mb-4">CosplayForge</h1>
+            <p className="text-xl text-purple-200 mb-8">Upload any character. We'll blueprint it instantly.</p>
+            
+            <div className="bg-gray-800 rounded-2xl p-8 border-2 border-purple-500 mb-6">
+              <input type="file" id="character-upload" className="hidden" />
+              <label htmlFor="character-upload" 
+                     className="cursor-pointer block bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700 text-white font-bold py-4 px-8 rounded-xl text-lg transition transform hover:scale-105">
+                📤 UPLOAD CHARACTER IMAGE
+              </label>
+              <div className="mt-6 text-gray-400 text-sm">Or try a preset:</div>
+              <div className="mt-4 flex gap-3 justify-center flex-wrap">
+                {['Saitama', 'Spider-Man', 'Master Chief'].map((char) => (
+                  <button
+                    key={char}
+                    onClick={handleScan}
+                    className="px-4 py-2 bg-purple-900/40 border border-purple-500 hover:border-cyan-400 text-purple-200 rounded-lg transition"
+                  >
+                    {char}
+                  </button>
+                ))}
+              </div>
+            </div>
+            
+            <button 
+              onClick={handleScan}
+              disabled={isScanning}
+              className="bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 disabled:opacity-50 text-gray-900 font-bold py-3 px-10 rounded-full text-xl flex items-center mx-auto hover:scale-105 transition transform disabled:cursor-not-allowed"
+            >
+              <Scan className="mr-2 w-6 h-6" /> 
+              {isScanning ? 'SCANNING...' : 'SCAN NOW'}
+            </button>
+            
+            {/* SPONSOR BADGES */}
+            <div className="mt-12 flex flex-wrap justify-center gap-3 opacity-70">
+              <div className="bg-white/10 px-3 py-1 rounded-lg text-sm">✨ Gemini API</div>
+              <div className="bg-white/10 px-3 py-1 rounded-lg text-sm">🎬 Computer Use</div>
+              <div className="bg-white/10 px-3 py-1 rounded-lg text-sm">🧠 K2 Think</div>
+            </div>
+
+            {/* Play agent demo (pre-recorded) */}
+            <div className="mt-6 flex gap-3 justify-center">
+              <button
+                onClick={() => {
+                  setPlayingAgentOverlay(true)
+                  setTimeout(() => setPlayingAgentOverlay(false), 5000)
+                }}
+                className="inline-flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-semibold py-2 px-5 rounded-lg transition transform hover:scale-105"
+              >
+                <Video className="w-4 h-4" />
+                Agent Demo (5s)
+              </button>
+              <button
+                onClick={() => setShowAgentDemo(true)}
+                className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-5 rounded-lg transition transform hover:scale-105"
+              >
+                ▶ Full Recording
+              </button>
+            </div>
+          </div>
+        ) : (
+          // SCAN RESULTS SCREEN
+          <>
+            {/* Header */}
+            <div className="mb-8">
+              <h1 className="text-4xl font-bold text-white mb-2 flex items-center gap-2">
+                <Sparkles className="w-8 h-8 text-cyan-400" />
+                Character Identified: {geminiAnalysis.character}
+              </h1>
+              <p className="text-purple-300">Powered by Gemini AI Vision</p>
+            </div>
+
+            {/* Gemini Analysis Result */}
+            <div className="mb-6 bg-purple-900/30 border border-purple-500 rounded-lg p-6">
+              <h2 className="text-cyan-300 font-bold mb-4 flex items-center gap-2">
+                <span className="text-sm bg-cyan-600 text-white px-3 py-1 rounded">GEMINI</span>
+                Character Detected: {geminiAnalysis.character}
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-purple-300 text-sm">
+                    <span className="text-cyan-400 font-semibold">Confidence:</span> {(geminiAnalysis.confidence * 100).toFixed(1)}%
+                  </p>
+                  <p className="text-purple-300 text-sm mt-2">
+                    <span className="text-cyan-400 font-semibold">Source:</span> {geminiAnalysis.source}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-purple-300 text-sm">
+                    <span className="text-cyan-400 font-semibold">Components:</span> {geminiAnalysis.totalComponents} parts
+                  </p>
+                  <p className="text-purple-300 text-sm mt-2">
+                    <span className="text-cyan-400 font-semibold">Difficulty:</span> {geminiAnalysis.estimatedDifficulty}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-4 pt-4 border-t border-purple-500">
+                <p className="text-purple-300 text-sm font-semibold mb-2">Parts Identified:</p>
+                <div className="space-y-2">
+                  {geminiAnalysis.parts.map((part, idx) => (
+                    <div key={idx} className="text-xs text-purple-400 flex justify-between">
+                      <span>• {part.name}</span>
+                      <span className="text-cyan-400">{part.material}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Safety Alert */}
+            <div className="mb-6">
+              <SafetyAlert 
+                message="This demo uses simulated AI responses for demonstration purposes." 
+                type="info"
+              />
+            </div>
+
+            {/* Main content grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-6">
+              {/* Left: Computer Use Demo */}
+              <div>
+                <ComputerUseDemo />
+              </div>
+
+              {/* Right: K2 Think Flow */}
+              <div>
+                <K2ThinkFlow />
+              </div>
+            </div>
+
+            {/* Proceed Button */}
+            <button
+              onClick={() => navigate('/blueprint')}
+              className="w-full bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700 text-white font-bold py-3 rounded-lg transition duration-300"
+            >
+              Generate Blueprint →
+            </button>
+
+            {/* Agent demo modal/player */}
+            {showAgentDemo && (
+              <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+                <div className="w-full max-w-3xl p-4">
+                  <div className="bg-gray-900 rounded-lg overflow-hidden">
+                    <div className="p-3 flex justify-between items-center border-b border-gray-800">
+                      <div className="text-sm text-gray-300">Agent Demo Playback</div>
+                      <button onClick={() => setShowAgentDemo(false)} className="text-gray-400 hover:text-white">✕</button>
+                    </div>
+                    <video
+                      src="/demoVideos/agent-clicks.mp4"
+                      controls
+                      autoPlay
+                      className="w-full h-80 bg-black"
+                      onEnded={() => setShowAgentDemo(false)}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  )
+}

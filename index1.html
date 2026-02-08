@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CosplayForge | Craft Your Reality</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        slate: { 850: '#1e293b', 900: '#0f172a', 950: '#020617' },
+                        primary: { 500: '#6366f1', 600: '#4f46e5' }
+                    },
+                    animation: {
+                        'scroll': 'scroll 40s linear infinite',
+                    },
+                    keyframes: {
+                        scroll: {
+                            '0%': { transform: 'translateX(0)' },
+                            '100%': { transform: 'translateX(-50%)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Hide scrollbar utility */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Pause animation on Hover */
+        .marquee-container:hover .marquee-content {
+            animation-play-state: paused;
+        }
+
+        /* Card Hover Effects */
+        .card-pop {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .card-pop:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 20px 25px -5px rgba(99, 102, 241, 0.4), 0 10px 10px -5px rgba(99, 102, 241, 0.2);
+            border-color: rgba(99, 102, 241, 0.5);
+            z-index: 10;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 font-sans antialiased overflow-x-hidden transition-colors duration-300 min-h-screen flex flex-col">
+
+    <nav class="w-full px-8 py-6 flex justify-between items-center z-50 relative">
+        <div class="text-2xl font-black tracking-tighter flex items-center gap-2 select-none">
+            <i class="fas fa-hammer text-indigo-500"></i>
+            <span>CosplayForge</span>
+        </div>
+        
+        <div class="flex items-center gap-6">
+            <button onclick="toggleTheme()" class="text-slate-500 hover:text-indigo-500 dark:text-slate-400 dark:hover:text-indigo-400 transition transform hover:rotate-12">
+                <i id="themeIcon" class="fas fa-sun text-xl"></i>
+            </button>
+            <a href="#" class="font-bold text-sm bg-slate-200 dark:bg-slate-800 px-4 py-2 rounded-lg hover:bg-indigo-500 hover:text-white transition">Sign In</a>
+        </div>
+    </nav>
+
+    <main class="flex flex-col items-center justify-center mt-10 md:mt-16 px-4 relative z-10 flex-grow">
+        
+        <div class="text-center max-w-3xl mx-auto mb-10">
+            <h1 class="text-5xl md:text-7xl font-black mb-6 tracking-tight bg-clip-text text-transparent bg-gradient-to-br from-slate-900 to-slate-600 dark:from-white dark:to-slate-500">
+                Forged by AI. <br>Built by You.
+            </h1>
+            <p class="text-xl text-slate-500 dark:text-slate-400 font-light">
+                Upload a reference or search a character. We generate the blueprints, budget, and materials list instantly.
+            </p>
+        </div>
+
+        <div class="w-full max-w-2xl relative group mb-12">
+            <div class="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
+            
+            <form class="relative bg-white dark:bg-slate-900 rounded-xl shadow-2xl flex items-center p-2 border border-slate-200 dark:border-slate-700" onsubmit="event.preventDefault();">
+                <input type="file" id="imageUpload" class="hidden" accept="image/*">
+                
+                <button type="button" onclick="document.getElementById('imageUpload').click()" 
+                        class="p-4 text-slate-400 hover:text-indigo-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition" title="Upload Image">
+                    <i class="fas fa-paperclip text-xl"></i>
+                </button>
+
+                <input type="text" placeholder="Search character (e.g. 'Jinx Arcane') or upload image..." 
+                       class="flex-grow bg-transparent border-none outline-none text-lg px-4 text-slate-700 dark:text-slate-200 placeholder-slate-400 h-12">
+
+                <button class="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3 rounded-lg font-bold text-lg shadow-lg shadow-indigo-500/30 transition transform active:scale-95 flex items-center gap-2">
+                    <span>Forge</span>
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+            </form>
+            
+            <div class="flex justify-between mt-3 text-xs font-medium text-slate-400 px-4">
+                <span>Supports JPG, PNG, WEBP</span>
+                <span>Powered by Gemini Vision</span>
+            </div>
+        </div>
+    </main>
+
+    <section class="w-full overflow-hidden pb-12 relative marquee-container mt-10">
+        
+        <div class="px-8 mb-4">
+            <h3 class="text-sm font-bold uppercase tracking-widest text-slate-400">Popular Blueprints</h3>
+        </div>
+
+        <div class="absolute top-0 left-0 w-24 md:w-48 h-full bg-gradient-to-r from-slate-50 dark:from-slate-950 to-transparent z-20 pointer-events-none"></div>
+        <div class="absolute top-0 right-0 w-24 md:w-48 h-full bg-gradient-to-l from-slate-50 dark:from-slate-950 to-transparent z-20 pointer-events-none"></div>
+
+        <div id="carousel-track" class="flex gap-8 animate-scroll marquee-content w-max pl-8">
+            </div>
+    </section>
+
+    <footer class="py-6 text-center text-xs text-slate-400 dark:text-slate-600">
+        &copy; 2024 CosplayForge. Powered by Gemini Vision & K2 Think.
+    </footer>
+
+    <script>
+        // --- 1. DATA CONFIGURATION ---
+        // To add a character: Add an object to this list.
+        // To use local images: Put image in 'images' folder and change img: "images/filename.jpg"
+        const characterData = [
+            {
+                name: "Naruto",
+                img: "images/naruto.jpg",
+                level: "Intermediate",
+                color: "pink-500"
+            },
+            {
+                name: "Gojo",
+                img: "images/gojo.jpg",
+                level: "Intermediate",
+                color: "indigo-500"
+            },
+            {
+                name: "Spiderman",
+                img: "images/spiderman.jpeg", 
+                level: "Beginner",
+                color: "red-500"
+            },
+            {
+                name: "Miku",
+                img: "images/miku.jpeg", 
+                level: "Expert",
+                color: "yellow-500"
+            },
+            {
+                name: "Luffy",
+                img: "images/luffy.jpeg", 
+                level: "Beginner",
+                color: "green-500"
+            },
+            {
+                name: "Mikasa",
+                img: "images/mikasa.jpeg", 
+                level: "Expert",
+                color: "blue-500"
+            }
+        ];
+
+        // --- 2. RENDER CAROUSEL ---
+        function renderCarousel() {
+            const track = document.getElementById('carousel-track');
+            
+            // Duplicate the list to create the seamless infinite loop
+            // [...list, ...list] creates two copies back-to-back
+            const displayList = [...characterData, ...characterData]; 
+
+            const htmlContent = displayList.map(char => `
+                <div class="card-pop relative w-64 h-96 rounded-2xl overflow-hidden cursor-pointer border border-slate-200 dark:border-slate-800 bg-slate-900 flex-shrink-0 group">
+                    <img src="${char.img}" alt="${char.name}" class="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-100 transition duration-500">
+                    
+                    <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
+                    
+                    <div class="absolute bottom-0 left-0 p-5 w-full">
+                        <div class="backdrop-blur-md bg-white/10 p-3 rounded-xl border border-white/10 shadow-lg">
+                            <h4 class="text-white text-xl font-bold leading-tight">${char.name}</h4>
+                            <div class="flex items-center gap-2 mt-2">
+                                <span class="w-2 h-2 rounded-full bg-${char.color}"></span>
+                                <p class="text-slate-300 text-[10px] font-bold uppercase tracking-wider">${char.level}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            track.innerHTML = htmlContent;
+        }
+
+        // --- 3. THEME TOGGLE LOGIC ---
+        function toggleTheme() {
+            const html = document.documentElement;
+            const icon = document.getElementById('themeIcon');
+            
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                icon.classList.remove('fa-sun');
+                icon.classList.add('fa-moon');
+            } else {
+                html.classList.add('dark');
+                icon.classList.remove('fa-moon');
+                icon.classList.add('fa-sun');
+            }
+        }
+
+        // Initialize
+        renderCarousel();
+
+    </script>
+</body>
+</html>
