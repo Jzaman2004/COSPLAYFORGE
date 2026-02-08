@@ -10,8 +10,8 @@ import Checkout from './pages/Checkout'
 function App() {
   return (
     <Router>
-      <div 
-        className="min-h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 overflow-x-hidden flex flex-col"
+      <div
+        className="min-h-screen bg-slate-950 text-slate-100 font-sans overflow-x-hidden flex flex-col selection:bg-neon-purple selection:text-white"
         style={{
           width: '100vw',
           maxWidth: '100vw',
@@ -27,7 +27,7 @@ function App() {
           <Route path="/tryonlab" element={<TryOnLab />} />
           <Route path="/checkout" element={<Checkout />} />
         </Routes>
-        
+
         {/* FOOTER WITH SPONSOR INFO */}
         <footer className="py-8 text-center text-xs md:text-sm border-t border-slate-300 dark:border-gray-700 mt-12 w-full bg-slate-50 dark:bg-slate-950">
           <div className="w-full px-4">

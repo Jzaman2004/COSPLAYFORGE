@@ -21,7 +21,7 @@ export default function K2ThinkFlow() {
         }
         return prev
       })
-    }, 30) // Faster animation
+    }, 20) // Fast terminal speed
 
     return () => clearInterval(interval)
   }, [])
@@ -29,38 +29,53 @@ export default function K2ThinkFlow() {
   const percentComplete = (visibleSteps / maxSteps) * 100
 
   return (
-    <div className="w-full bg-gray-900 rounded-lg p-4 border border-emerald-500/50 mb-6">
-      <div className="flex items-center mb-3">
-        <div className="w-2 h-2 bg-emerald-400 rounded-full mr-2 animate-pulse"></div>
-        <span className="text-white font-mono text-sm">K2 Think Reasoning Engine • {visibleSteps}/300 steps</span>
-      </div>
-      
-      <div 
-        ref={scrollContainerRef}
-        className="h-48 overflow-y-auto text-xs text-gray-300 font-mono p-3 bg-black rounded border border-emerald-500/20 mb-3"
-      >
-        {k2Reasoning.steps.slice(0, visibleSteps).map((text, i) => (
-          <div key={i} className="mb-1 text-emerald-600/70 hover:text-emerald-400 transition">
-            <span className="text-emerald-500">[{i+1}/300]</span> <span className="text-gray-400">{text}</span>
+    <div className="w-full glass-panel rounded-lg p-1 border border-neon-purple/30 relative overflow-hidden group">
+      {/* Search/Scan Line Animation */}
+      <div className="absolute top-0 left-0 w-full h-1 bg-neon-purple/50 shadow-[0_0_20px_rgba(217,70,239,0.5)] animate-scan-line z-10"></div>
+
+      <div className="bg-black/90 p-4 rounded-lg">
+        <div className="flex items-center justify-between mb-4 border-b border-white/10 pb-2">
+          <div className="flex items-center gap-3">
+            <div className="w-3 h-3 bg-neon-purple rounded-full animate-pulse shadow-[0_0_10px_#d946ef]"></div>
+            <span className="text-white font-mono text-xs tracking-wider">K2 DEEP REASONING ENGINE v4.0</span>
           </div>
-        ))}
-        {visibleSteps < maxSteps && (
-          <div className="text-emerald-500 animate-pulse">▌ thinking...</div>
-        )}
-      </div>
-      
-      {/* Progress bar */}
-      <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden mb-2">
-        <motion.div
-          className="h-full bg-gradient-to-r from-emerald-500 to-cyan-500"
-          animate={{ width: `${percentComplete}%` }}
-          transition={{ duration: 0.2 }}
-        />
-      </div>
-      
-      <div className="flex justify-between items-center text-xs text-gray-500">
-        <span>Confidence: {(k2Reasoning.confidence * 100).toFixed(1)}%</span>
-        <span className="text-emerald-400">Time: {k2Reasoning.completionTime}</span>
+          <span className="text-neon-cyan font-mono text-s">{visibleSteps} / {maxSteps} OPS</span>
+        </div>
+
+        <div
+          ref={scrollContainerRef}
+          className="h-64 overflow-y-auto font-mono text-xs p-2 custom-scrollbar"
+        >
+          {k2Reasoning.steps.slice(0, visibleSteps).map((text, i) => (
+            <div key={i} className="mb-0.5 flex gap-2">
+              <span className="text-slate-600 w-8 text-right">0x{i.toString(16).toUpperCase().padStart(2, '0')}</span>
+              <span className="text-neon-purple/80 opacity-0 animate-fadeIn" style={{ animationDelay: '0.05s', animationFillMode: 'forwards' }}>&gt; {text}</span>
+            </div>
+          ))}
+          {visibleSteps < maxSteps && (
+            <div className="text-neon-cyan animate-pulse">_</div>
+          )}
+        </div>
+
+        {/* Progress bar */}
+        <div className="mt-4">
+          <div className="flex justify-between text-[10px] text-slate-500 font-mono mb-1">
+            <span>PROCESSING TENSOR TILE...</span>
+            <span>{(percentComplete).toFixed(1)}%</span>
+          </div>
+          <div className="h-1 bg-slate-800 rounded-full overflow-hidden">
+            <motion.div
+              className="h-full bg-gradient-to-r from-neon-purple to-neon-cyan shadow-[0_0_10px_#06b6d4]"
+              animate={{ width: `${percentComplete}%` }}
+              transition={{ duration: 0.2 }}
+            />
+          </div>
+        </div>
+
+        <div className="flex justify-between items-center text-[10px] text-slate-500 mt-2 font-mono">
+          <span>CONFIDENCE: <span className="text-green-400">{(k2Reasoning.confidence * 100).toFixed(6)}%</span></span>
+          <span className="text-slate-400">LATENCY: {k2Reasoning.completionTime}</span>
+        </div>
       </div>
     </div>
   )

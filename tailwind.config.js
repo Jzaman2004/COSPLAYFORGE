@@ -16,7 +16,16 @@ export default {
         primary: {
           500: '#6366f1',
           600: '#4f46e5'
+        },
+        neon: {
+          purple: '#d946ef',
+          cyan: '#06b6d4',
+          blue: '#3b82f6'
         }
+      },
+      fontFamily: {
+        sans: ['Inter', 'sans-serif'],
+        display: ['Orbitron', 'sans-serif'],
       },
       animation: {
         'scroll': 'scroll 40s linear infinite',

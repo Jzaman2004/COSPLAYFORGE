@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
-import { Loader, Sun, Moon } from 'lucide-react'
+import { motion } from 'framer-motion'
+import { Loader, Upload, Scan, Zap } from 'lucide-react'
 import { generateCharacterProfile, generateDALLEVisualization } from '../services/llamaService'
 
 export default function CharacterScan() {
@@ -10,24 +11,11 @@ export default function CharacterScan() {
   const [uploadedImage, setUploadedImage] = useState(null)
   const [uploadedFileName, setUploadedFileName] = useState('')
   const [selectedCharacter, setSelectedCharacter] = useState(null)
-  const [isDark, setIsDark] = useState(true)
 
+  // Force dark mode
   useEffect(() => {
-    const savedTheme = localStorage.getItem('theme')
-    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
-    const initialDark = savedTheme ? savedTheme === 'dark' : prefersDark
-    setIsDark(initialDark)
-    document.documentElement.classList.toggle('dark', initialDark)
+    document.documentElement.classList.add('dark')
   }, [])
-
-  const toggleTheme = () => {
-    setIsDark((prev) => {
-      const next = !prev
-      document.documentElement.classList.toggle('dark', next)
-      localStorage.setItem('theme', next ? 'dark' : 'light')
-      return next
-    })
-  }
 
   const formatCharacterName = (filename) => {
     if (!filename) return ''
@@ -36,7 +24,7 @@ export default function CharacterScan() {
     return spaced.replace(/\b\w/g, (char) => char.toUpperCase())
   }
 
-  // Handle file upload - just store the image, don't forge yet
+  // Handle file upload
   const handleFileUpload = (e) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -51,24 +39,24 @@ export default function CharacterScan() {
     reader.readAsDataURL(file)
   }
 
-  // Forge the image - triggered by Forge button
+  // Forge the image
   const handleForge = async () => {
     if (!uploadedImage && !selectedCharacter) {
-      setError('Please upload an image or select a character first')
+      setError('INITIALIZATION ERROR: No Subject Detected')
       return
     }
 
     setIsForging(true)
     setError(null)
-    
+
     try {
       const nameFromFile = formatCharacterName(uploadedFileName)
       const characterName = uploadedImage ? nameFromFile : selectedCharacter
       const desc = await generateCharacterProfile(characterName || 'Unknown Character')
 
       const viz = await generateDALLEVisualization(desc)
-      
-      // Store in sessionStorage and navigate to blueprint page
+
+      // Store in sessionStorage
       sessionStorage.setItem('cosplayDescription', JSON.stringify({
         description: desc,
         visualization: viz,
@@ -77,10 +65,9 @@ export default function CharacterScan() {
         filename: uploadedFileName
       }))
 
-      // Navigate to blueprint/description page
       navigate('/blueprint')
     } catch (err) {
-      setError(`Forging failed: ${err instanceof Error ? err.message : 'Unknown error'}`)
+      setError(`SYSTEM FAILURE: ${err instanceof Error ? err.message : 'Unknown error'}`)
     } finally {
       setIsForging(false)
     }
@@ -104,161 +91,171 @@ export default function CharacterScan() {
   const displayList = [...characterData, ...characterData]
 
   return (
-    <div 
-      className="min-h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans antialiased overflow-x-hidden transition-colors duration-300 flex flex-col"
-      style={{ 
-        width: '100vw',
-        maxWidth: '100vw',
-        overflowX: 'hidden',
-        marginLeft: 'calc(50% - 50vw)',
-        marginRight: 'calc(50% - 50vw)'
-      }}
-    >
-      
-      <header className="w-full px-6 pt-6">
-        <div className="flex items-center justify-between">
-          <div className="text-lg md:text-xl font-bold tracking-wide text-slate-900 dark:text-white">CosplayForge</div>
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              className="text-sm font-semibold px-4 py-2 rounded-full border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-indigo-400 hover:text-indigo-600 dark:hover:text-white transition"
-            >
-              Sign in
-            </button>
-            <button
-              type="button"
-              onClick={toggleTheme}
-              className="text-sm font-semibold px-4 py-2 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-900 dark:text-slate-100 hover:bg-slate-300 dark:hover:bg-slate-700 transition flex items-center gap-2"
-            >
-              {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-              {isDark ? 'Light mode' : 'Dark mode'}
-            </button>
+    <div className="w-full max-w-7xl mx-auto px-4 pt-6 pb-20">
+
+      {/* Header */}
+      <header className="flex items-center justify-between mb-16">
+        <div className="flex items-center gap-3">
+          <Zap className="w-8 h-8 text-neon-purple animate-pulse" />
+          <div className="text-2xl font-display font-bold tracking-wider text-white text-glow">
+            COSPLAY<span className="text-neon-cyan">FORGE</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="px-3 py-1 border border-neon-cyan/30 bg-neon-cyan/10 rounded text-xs font-mono text-neon-cyan">
+            SYSTEM: ONLINE
           </div>
         </div>
       </header>
 
-      <main className="flex flex-col flex-1 pt-8 pb-12 w-full">
-        <div className="text-center w-full px-4 mb-6">
-          <h1 className="text-4xl md:text-6xl font-black mb-12 tracking-tight leading-[1.08] pb-2 bg-clip-text text-transparent bg-gradient-to-br from-slate-900 to-slate-600 dark:from-white dark:to-slate-500">
-            <span className="block mb-4">Forged by AI.</span>
-            <span className="block mb-6">Built by You.</span>
+      <main className="grid lg:grid-cols-2 gap-12 items-center">
+
+        {/* Left Column: Text & Instructions */}
+        <div>
+          <h1 className="text-5xl md:text-7xl font-display font-black mb-6 leading-tight">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400">FORGED BY</span><br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-purple to-neon-cyan text-glow">INTELLIGENCE</span>
           </h1>
-          <p className="text-lg text-slate-600 dark:text-slate-400 font-light">
-            Upload a character image or pick a preset. Click Forge to generate cosplay description.
+          <p className="text-slate-400 text-lg mb-8 font-light max-w-lg border-l-2 border-neon-purple/50 pl-4">
+            Upload a reference image or select a preset to initialize the generative cosplay engine.
           </p>
-        </div>
 
-        {/* Upload Form */}
-        <div className="w-full px-4 mb-8">
-          <form className="relative bg-white dark:bg-slate-900 rounded-xl shadow-2xl flex items-center p-2 border border-slate-200 dark:border-slate-700 max-w-3xl mx-auto">
-            <input 
-              type="file" 
-              id="imageUpload" 
-              className="hidden" 
-              accept="image/*"
-              onChange={handleFileUpload}
-            />
-            
-            <button 
-              type="button" 
-              onClick={() => !isForging && document.getElementById('imageUpload').click()} 
-              disabled={isForging}
-              className="p-4 text-slate-400 hover:text-indigo-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition disabled:opacity-50" 
-              title="Upload Image">
-              {isForging ? (
-                <Loader className="w-5 h-5 animate-spin" />
-              ) : (
-                <i className="fas fa-paperclip text-xl"></i>
-              )}
-            </button>
-
-            <input 
-              type="text" 
-              placeholder={uploadedImage ? `${uploadedFileName || 'Image'} selected ✓` : (selectedCharacter ? `${selectedCharacter} selected ✓` : "Upload character image or select preset...")} 
-              className="flex-grow bg-transparent border-none outline-none text-lg px-4 text-slate-700 dark:text-slate-200 placeholder-slate-400 h-12"
-              readOnly 
-            />
-
-            <button 
-              type="button" 
-              disabled={isForging || (!uploadedImage && !selectedCharacter)}
-              onClick={handleForge}
-              className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white px-8 py-3 rounded-lg font-bold text-lg shadow-lg shadow-indigo-500/30 transition transform active:scale-95 flex items-center gap-2">
-              <span>{isForging ? 'Forging...' : 'Forge'}</span>
-              {isForging && <Loader className="w-4 h-4 animate-spin" />}
-            </button>
-          </form>
-          
-          {error && (
-            <div className="mt-4 p-4 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded-lg text-red-700 dark:text-red-300">
-              {error}
-            </div>
-          )}
-        </div>
-
-        {/* Preview Section */}
-        {(uploadedImage || selectedCharacter) && (
-          <div className="w-full px-4 mb-8">
-            <div className="bg-slate-100 dark:bg-slate-900 rounded-lg p-4 border border-slate-300 dark:border-slate-700">
-              <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
-                {uploadedImage ? "📸 Uploaded Image" : `⭐ Selected Character: ${selectedCharacter}`}
-              </p>
-              {uploadedImage && (
-                <img src={uploadedImage} alt="Uploaded" className="w-full max-h-96 object-contain rounded-lg" />
-              )}
-              {selectedCharacter && !uploadedImage && (
-                <img 
-                  src={characterData.find(c => c.name === selectedCharacter)?.img} 
-                  alt={selectedCharacter} 
-                  className="w-full max-h-96 object-contain rounded-lg" 
+          <div className="flex flex-col gap-4 max-w-md">
+            {/* Upload Box */}
+            <div className="relative group">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-neon-purple to-neon-cyan rounded-lg blur opacity-30 group-hover:opacity-100 transition duration-1000"></div>
+              <div className="relative glass-panel rounded-lg p-1">
+                <input
+                  type="file"
+                  id="imageUpload"
+                  className="hidden"
+                  accept="image/*"
+                  onChange={handleFileUpload}
                 />
+                <button
+                  onClick={() => !isForging && document.getElementById('imageUpload').click()}
+                  className="w-full h-32 border-2 border-dashed border-slate-600 hover:border-neon-cyan/50 rounded flex flex-col items-center justify-center gap-2 group-hover:bg-slate-900/50 transition cursor-pointer"
+                >
+                  {uploadedImage ? (
+                    <img src={uploadedImage} alt="Preview" className="h-28 w-full object-contain" />
+                  ) : (
+                    <>
+                      <Upload className="w-8 h-8 text-slate-500 group-hover:text-neon-cyan transition" />
+                      <span className="text-slate-500 font-mono text-sm group-hover:text-neon-cyan">INITIALIZE DATA UPLOAD</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Selection Display */}
+            <div className="glass-panel p-3 rounded border-l-4 border-neon-cyan flex items-center justify-between">
+              <span className="font-mono text-xs text-slate-400">TARGET:</span>
+              <span className="font-mono text-neon-cyan font-bold truncate max-w-[200px]">
+                {uploadedFileName || selectedCharacter || "WAITING FOR INPUT..."}
+              </span>
+            </div>
+
+            {/* Forge Button */}
+            <button
+              onClick={handleForge}
+              disabled={isForging || (!uploadedImage && !selectedCharacter)}
+              className="relative w-full py-4 bg-neon-purple/20 hover:bg-neon-purple/40 border border-neon-purple/50 text-white font-display font-bold tracking-widest text-xl rounded transition overflow-hidden group disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isForging ? (
+                <div className="flex items-center justify-center gap-3">
+                  <Loader className="w-6 h-6 animate-spin" />
+                  <span>ANALYZING GEOMETRY...</span>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center gap-3">
+                  <Scan className="w-6 h-6 group-hover:animate-pulse" />
+                  <span>INITIATE FORGE</span>
+                </div>
               )}
+            </button>
+
+            {error && (
+              <div className="p-3 bg-red-900/20 border border-red-500/50 text-red-400 font-mono text-xs rounded">
+                [{error}]
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Right Column: Preset Carousel */}
+        <div className="relative">
+          <div className="absolute inset-0 bg-neon-purple/5 blur-[100px] rounded-full"></div>
+          <p className="font-mono text-xs text-slate-500 mb-4 tracking-widest text-center">OR SELECT FROM DATABASE:</p>
+
+          <div className="h-[600px] overflow-hidden relative fade-y-mask marquee-vertical-container">
+            <div className="space-y-6 animate-scroll-vertical hover:pause">
+              {[...displayList, ...displayList].map((character, idx) => {
+                const isSelected = selectedCharacter === character.name
+                return (
+                  <motion.div
+                    key={`${character.name}-${idx}`}
+                    layout
+                    onClick={() => handlePresetClick(character.name)}
+                    initial={{ opacity: 0.8 }}
+                    whileHover={{ scale: 1.02, opacity: 1 }}
+                    animate={{
+                      scale: isSelected ? 1.05 : 1,
+                      borderColor: isSelected ? 'rgba(6, 182, 212, 0.8)' : 'rgba(148, 163, 184, 0.1)',
+                      backgroundColor: isSelected ? 'rgba(6, 182, 212, 0.1)' : 'rgba(15, 23, 42, 0.6)'
+                    }}
+                    transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                    className={`glass-panel p-4 flex items-center gap-6 cursor-pointer border rounded-xl relative overflow-hidden group/card`}
+                  >
+                    <div className="relative">
+                      <img
+                        src={character.img}
+                        className={`object-cover rounded-lg transition-all duration-500 ${isSelected ? 'w-32 h-40 ring-2 ring-neon-cyan shadow-[0_0_15px_rgba(6,182,212,0.5)]' : 'w-24 h-32 grayscale group-hover/card:grayscale-0'}`}
+                        alt={character.name}
+                      />
+                      {isSelected && (
+                        <motion.div
+                          layoutId="selection-glow"
+                          className="absolute inset-0 rounded-lg bg-neon-cyan/20 animate-pulse"
+                        />
+                      )}
+                    </div>
+
+                    <div className="flex-1">
+                      <h3 className={`font-display font-bold text-2xl mb-1 ${isSelected ? 'text-neon-cyan text-glow' : 'text-white'}`}>
+                        {character.name.toUpperCase()}
+                      </h3>
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className={`h-1.5 w-1.5 rounded-full ${isSelected ? 'bg-neon-purple animate-ping' : 'bg-slate-500'}`}></div>
+                        <span className="font-mono text-xs text-slate-400 tracked-widest">{character.level.toUpperCase()} PROTOCOL</span>
+                      </div>
+
+                      {isSelected && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          className="font-mono text-xs text-neon-cyan/80 mt-2"
+                        >
+                          &gt; SUBJECT_SELECTED<br />
+                          &gt; READY_TO_FORGE
+                        </motion.div>
+                      )}
+                    </div>
+
+                    {/* Decorative selection corners */}
+                    {isSelected && (
+                      <>
+                        <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-neon-cyan"></div>
+                        <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-neon-cyan"></div>
+                      </>
+                    )}
+                  </motion.div>
+                )
+              })}
             </div>
           </div>
-        )}
-
-        {/* Character Carousel */}
-        <div className="text-center w-full px-4 mb-4 mt-8">
-          <p className="text-slate-600 dark:text-slate-400 text-sm">Or pick a preset character:</p>
         </div>
-        
-        <section 
-          className="relative overflow-hidden pb-12 marquee-container bg-transparent"
-          style={{ 
-            width: '100vw',
-            marginLeft: 'calc(50% - 50vw)',
-            marginRight: 'calc(50% - 50vw)'
-          }}
-        >
-          <div className="flex gap-6 animate-scroll marquee-content w-max">
-            {displayList.map((character, idx) => (
-              <div 
-                key={idx} 
-                className={`bg-white dark:bg-slate-900 border-2 rounded-lg p-3 min-w-[200px] shadow-lg backdrop-blur-sm card-pop cursor-pointer group transition hover:shadow-xl active:scale-95 ${
-                  selectedCharacter === character.name 
-                    ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' 
-                    : 'border-slate-200 dark:border-slate-700 hover:border-indigo-400'
-                }`}
-                onClick={() => handlePresetClick(character.name)}
-              >
-                <div className="w-full h-40 rounded-lg overflow-hidden mb-3 bg-slate-100 dark:bg-slate-800 flex items-center justify-center p-2">
-                  <img 
-                    src={character.img} 
-                    alt={character.name} 
-                    className="w-full h-full object-contain group-hover:scale-105 transition"
-                    onError={(e) => {
-                      e.target.onerror = null;
-                      e.target.style.display = 'none';
-                      e.target.parentElement.innerHTML = '<div class="text-slate-400 text-xs">Image not found</div>';
-                    }}
-                  />
-                </div>
-                <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1">{character.name}</h3>
-                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">{character.level}</span>
-              </div>
-            ))}
-          </div>
-        </section>
+
       </main>
     </div>
   )

@@ -5,12 +5,12 @@ export default function K2Simulator({ isActive, onComplete }) {
   const [stage, setStage] = useState(0)
 
   const thinkingStages = [
-    "🔍 Analyzing image composition...",
-    "👗 Identifying costume elements...",
-    "🎨 Mapping color palettes...",
-    "📐 Calculating proportions...",
-    "🔧 Identifying materials needed...",
-    "💡 Generating description...",
+    "SCANNING_IMAGE_VECTOR_SPACE...",
+    "IDENTIFYING_COSTUME_ELEMENTS...",
+    "MAPPING_COLOR_PALETTES...",
+    "CALCULATING_PROPORTIONS...",
+    "OPTIMIZING_MATERIAL_COSTS...",
+    "GENERATING_BLUEPRINT_DATA...",
   ]
 
   useEffect(() => {
@@ -24,11 +24,11 @@ export default function K2Simulator({ isActive, onComplete }) {
       return setTimeout(() => {
         setThoughts(prev => [...prev, thought])
         setStage(idx + 1)
-        
+
         if (idx === thinkingStages.length - 1) {
           setTimeout(() => onComplete?.(), 500)
         }
-      }, (idx + 1) * 800)
+      }, (idx + 1) * 600)
     })
 
     return () => intervals.forEach(clearTimeout)
@@ -37,26 +37,33 @@ export default function K2Simulator({ isActive, onComplete }) {
   if (!isActive) return null
 
   return (
-    <div className="w-full max-w-3xl mx-auto p-6 bg-gradient-to-br from-slate-900 via-indigo-900 to-slate-900 rounded-lg border border-indigo-500/50 mb-6">
-      <div className="flex items-start gap-4">
-        <div className="text-2xl animate-pulse text-white">🧠 K2 Reasoning Engine</div>
-        <div className="flex-1">
-          <div className="space-y-2">
-            {thoughts.map((thought, idx) => (
-              <div key={idx} className="text-sm text-slate-200 flex items-center gap-2 animate-fadeIn">
-                <span className="text-indigo-400">→</span>
-                {thought}
-              </div>
-            ))}
-          </div>
+    <div className="w-full max-w-3xl mx-auto p-1 bg-gradient-to-r from-neon-purple/20 to-neon-cyan/20 rounded-lg border border-neon-purple/50 mb-6 glass-panel">
+      <div className="bg-black/80 rounded p-6">
+        <div className="flex items-center gap-4 mb-4 border-b border-white/10 pb-4">
+          <div className="w-4 h-4 bg-neon-purple rounded-full animate-pulse shadow-[0_0_15px_#d946ef]"></div>
+          <div className="text-xl font-display font-bold text-white tracking-widest text-glow">K2 REASONING ENGINE</div>
+        </div>
+
+        <div className="space-y-2 font-mono text-sm mb-6 h-48 overflow-y-auto custom-scrollbar">
+          {thoughts.map((thought, idx) => (
+            <div key={idx} className="flex items-center gap-3 animate-fadeIn">
+              <span className="text-slate-600">[{new Date().toISOString().split('T')[1].slice(0, -1)}]</span>
+              <span className="text-neon-cyan">&gt; {thought}</span>
+            </div>
+          ))}
           {stage < thinkingStages.length && (
-            <div className="mt-3 h-1 bg-slate-700 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-gradient-to-r from-cyan-400 to-indigo-500 transition-all duration-500"
-                style={{ width: `${(stage / thinkingStages.length) * 100}%` }}
-              ></div>
+            <div className="flex items-center gap-3 animate-pulse">
+              <span className="text-slate-600">[{new Date().toISOString().split('T')[1].slice(0, -1)}]</span>
+              <span className="text-neon-purple">_PROCESSING...</span>
             </div>
           )}
+        </div>
+
+        <div className="h-1 bg-slate-800 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-gradient-to-r from-neon-purple to-neon-cyan shadow-[0_0_10px_#06b6d4] transition-all duration-300"
+            style={{ width: `${(stage / thinkingStages.length) * 100}%` }}
+          ></div>
         </div>
       </div>
     </div>
