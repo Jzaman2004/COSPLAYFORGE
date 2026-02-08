@@ -115,12 +115,18 @@ const CHARACTER_PROMPTS = {
 export const generateCharacterSpecificPrompt = (character, gender = 'male', promptIndex = 0) => {
   const characterLower = character?.toLowerCase() || 'gojo'
   const characterPrompts = CHARACTER_PROMPTS[characterLower]
-  
+
   if (!characterPrompts) {
-    console.warn(`Character "${character}" not found, defaulting to Gojo`)
-    return CHARACTER_PROMPTS.gojo[gender.toLowerCase()][promptIndex % 3]
+    console.log(`Character "${character}" not in presets, generating dynamic prompt`)
+    // Dynamic generation fallbacks
+    const dynamicPrompts = [
+      `full body portrait, ${gender} cosplayer wearing detailed ${character} costume, standing pose, white background, photorealistic, high detail, professional cosplay photography, studio lighting, 8k resolution`,
+      `full body shot, ${gender} as ${character}, screen accurate costume, confident pose, white background, detailed cosplay photography, soft shadows`,
+      `full body portrait, ${gender} cosplayer in ${character} outfit, intricate details, perfect lighting, white backdrop, professional photography, masterpiece`
+    ]
+    return dynamicPrompts[promptIndex % 3]
   }
-  
+
   const genderPromptsArray = characterPrompts[gender.toLowerCase()] || characterPrompts.male
   return genderPromptsArray[promptIndex % 3]
 }
@@ -128,10 +134,10 @@ export const generateCharacterSpecificPrompt = (character, gender = 'male', prom
 // Main image generation function
 export const generateCharacterImage = async (character, gender = 'male', cartItems = []) => {
   const characterLower = character?.toLowerCase() || 'gojo'
-  
+
   try {
     const prompt = generateCharacterSpecificPrompt(character, gender, 0)
-    
+
     console.log(`[Stability AI] Generating image for ${character} (${gender})`)
     console.log(`[Stability AI] Prompt: ${prompt.substring(0, 100)}...`)
     console.log(`[Stability AI] API Key configured: ${!!API_KEY}`)
@@ -193,7 +199,7 @@ export const generateCharacterImage = async (character, gender = 'male', cartIte
     }
 
     const data = await response.json()
-    
+
     if (!data.artifacts || data.artifacts.length === 0) {
       throw new Error('No images generated')
     }
@@ -228,10 +234,10 @@ export const generateCharacterImage = async (character, gender = 'male', cartIte
 // Generate variation with subtle changes
 export const generateCharacterVariation = async (character, gender = 'male') => {
   const characterLower = character?.toLowerCase() || 'gojo'
-  
+
   try {
     const prompt = generateCharacterSpecificPrompt(character, gender, 1)
-    
+
     console.log(`[Stability AI] Generating variation for ${character}`)
 
     if (!API_KEY) {
@@ -289,7 +295,7 @@ export const generateCharacterVariation = async (character, gender = 'male') => 
     }
 
     const data = await response.json()
-    
+
     if (!data.artifacts || data.artifacts.length === 0) {
       throw new Error('No variation generated')
     }
@@ -321,10 +327,10 @@ export const generateCharacterVariation = async (character, gender = 'male') => 
 // Regenerate with completely fresh prompt
 export const regenerateCharacterImage = async (character, gender = 'male') => {
   const characterLower = character?.toLowerCase() || 'gojo'
-  
+
   try {
     const prompt = generateCharacterSpecificPrompt(character, gender, 2)
-    
+
     console.log(`[Stability AI] Regenerating fresh image for ${character}`)
 
     if (!API_KEY) {
@@ -382,7 +388,7 @@ export const regenerateCharacterImage = async (character, gender = 'male') => {
     }
 
     const data = await response.json()
-    
+
     if (!data.artifacts || data.artifacts.length === 0) {
       throw new Error('No regenerated image created')
     }

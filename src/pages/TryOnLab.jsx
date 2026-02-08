@@ -86,9 +86,15 @@ export default function TryOnLab() {
 
   const generateDetailedItems = (items, tierType, characterName) => {
     return items.map((item, index) => {
-      const itemName = item.split('(')[0].trim() // Remove price if present
-      const priceMatch = item.match(/\$[\d.]+/)
-      const basePrice = priceMatch ? parseFloat(priceMatch[0].replace('$', '')) : null
+      // Handle both string loop (legacy) or object loop (new API)
+      const isObject = typeof item === 'object'
+      const rawName = isObject ? item.name : item
+      const itemName = rawName.split('(')[0].trim()
+
+      // Use API price if available, otherwise parse or mock
+      const apiPrice = isObject ? item.price : null
+      const priceMatch = !apiPrice && typeof rawName === 'string' ? rawName.match(/\$[\d.]+/) : null
+      const basePrice = apiPrice !== null ? apiPrice : (priceMatch ? parseFloat(priceMatch[0].replace('$', '')) : null)
 
       // Generate seller based on tier
       let seller, sellerLink
@@ -106,9 +112,9 @@ export default function TryOnLab() {
         sellerLink = seller.includes('Etsy') ? `https://etsy.com/search?q=${encodeURIComponent(itemName + ' ' + characterName)}` : `https://www.${seller.toLowerCase().replace(/\s+/g, '')}.com`
       }
 
-      // Generate price if not present
+      // Generate price if not present (Fallback)
       let price = basePrice
-      if (!price) {
+      if (price === null) {
         if (tierType === 'diy') {
           price = Math.round(Math.random() * 15 + 5) // $5-20
         } else if (tierType === 'budget') {
@@ -145,7 +151,7 @@ export default function TryOnLab() {
       return {
         id: index,
         name: itemName,
-        fullDescription: item,
+        fullDescription: rawName,
         description: description,
         price: price,
         seller: seller,

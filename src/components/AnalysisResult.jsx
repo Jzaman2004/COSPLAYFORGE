@@ -57,15 +57,23 @@ export default function AnalysisResult({ analysisData, onSelectTier, onBack }) {
 
                     {/* Normalize items if they come as an object (new format) or array (legacy) */}
                     <ul className="space-y-4 mb-8 flex-1">
-                        {(Array.isArray(items) ? items : items?.items || []).slice(0, 5).map((item, idx) => (
-                            <li key={idx} className="flex items-start gap-3 text-sm group/item">
-                                <span className={`mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0 transition-colors ${isPremium ? 'bg-purple-500 group-hover/item:bg-purple-300 group-hover/item:shadow-[0_0_8px_rgba(168,85,247,0.8)]'
-                                    : isDIY ? 'bg-orange-500'
-                                        : 'bg-cyan-500'
-                                    }`}></span>
-                                <span className="leading-tight text-slate-300 group-hover/item:text-white transition-colors">{item}</span>
-                            </li>
-                        ))}
+                        {(Array.isArray(items) ? items : items?.items || []).slice(0, 5).map((item, idx) => {
+                            // Handle both string items (legacy) and object items (new API)
+                            const itemName = typeof item === 'string' ? item : item.name
+                            const itemPrice = typeof item === 'object' && item.price > 0 ? `($${item.price})` : ''
+
+                            return (
+                                <li key={idx} className="flex items-start gap-3 text-sm group/item">
+                                    <span className={`mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0 transition-colors ${isPremium ? 'bg-purple-500 group-hover/item:bg-purple-300 group-hover/item:shadow-[0_0_8px_rgba(168,85,247,0.8)]'
+                                        : isDIY ? 'bg-orange-500'
+                                            : 'bg-cyan-500'
+                                        }`}></span>
+                                    <span className="leading-tight text-slate-300 group-hover/item:text-white transition-colors">
+                                        {itemName} <span className="text-slate-500 text-xs">{itemPrice}</span>
+                                    </span>
+                                </li>
+                            )
+                        })}
                     </ul>
 
                     <button
@@ -176,8 +184,8 @@ export default function AnalysisResult({ analysisData, onSelectTier, onBack }) {
             <div className="grid lg:grid-cols-3 gap-6 lg:gap-8 items-stretch">
                 <TierCard
                     title="DIY PROTOCOL"
-                    priceRange="$0 - $50 (Scavenger Mode)"
-                    items={tiers.diy}
+                    priceRange={tiers.diy?.estimatedCost || "$0 - $50 (Scavenger Mode)"}
+                    items={tiers.diy?.items || tiers.diy}
                     icon={Hammer}
                     color="orange-500"
                     delay={0.2}
@@ -186,8 +194,8 @@ export default function AnalysisResult({ analysisData, onSelectTier, onBack }) {
 
                 <TierCard
                     title="BUDGET BUILD"
-                    priceRange="$50 - $150 (Efficiency)"
-                    items={tiers.budget}
+                    priceRange={tiers.budget?.estimatedCost || "$50 - $150 (Efficiency)"}
+                    items={tiers.budget?.items || tiers.budget}
                     icon={ShoppingBag}
                     color="neon-cyan"
                     delay={0.3}
@@ -196,8 +204,8 @@ export default function AnalysisResult({ analysisData, onSelectTier, onBack }) {
 
                 <TierCard
                     title="PREMIUM FORGE"
-                    priceRange="$150 - $500+ (Cinema Quality)"
-                    items={tiers.premium}
+                    priceRange={tiers.premium?.estimatedCost || "$150 - $500+ (Cinema Quality)"}
+                    items={tiers.premium?.items || tiers.premium}
                     icon={Crown}
                     color="purple-500"
                     delay={0.4}
