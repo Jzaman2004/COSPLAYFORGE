@@ -78,7 +78,7 @@ export default function TryOnLab() {
     console.log('  - Generated image exists:', !!generatedImage)
     console.log('  - Selected gender:', selectedGender)
     console.log('  - Selected items count:', selectedItems.length)
-    
+
     window.scrollTo({ top: 0, behavior: 'smooth' })
     // Navigate after scroll completes
     setTimeout(() => {
@@ -212,7 +212,7 @@ export default function TryOnLab() {
     console.log('  - selectedItemIds:', selectedItemIds)
     console.log('  - lastGeneratedGender:', lastGeneratedGender)
     console.log('  - lastGeneratedItems:', lastGeneratedItems)
-    
+
     if (buildItems.length > 0 && tierData) {
       // Check if this is the first generation (no previous generation)
       const isFirstGeneration = lastGeneratedItems.length === 0
@@ -221,12 +221,12 @@ export default function TryOnLab() {
       // Check if item selection changed
       const lastItemsString = lastGeneratedItems.sort().join(',')
       const itemsChanged = selectedItemIds !== lastItemsString
-      
+
       console.log('  - isFirstGeneration:', isFirstGeneration)
       console.log('  - genderChanged:', genderChanged)
       console.log('  - itemsChanged:', itemsChanged)
       console.log('  - lastItemsString:', lastItemsString)
-      
+
       if (isFirstGeneration || genderChanged || itemsChanged) {
         console.log('  ✅ Generating new image...')
         generateNewImage()
@@ -245,18 +245,18 @@ export default function TryOnLab() {
   const generateNewImage = async () => {
     console.log('[TryOnLab] Starting AI image generation...')
     setIsGenerating(true)
-    
+
     try {
       // Step 1: Get character, tier, gender, and selected items
       const actualCharacter = tierData?.characterName || 'Gojo'
       const tier = tierData?.tier || 'budget'
       const itemsForPrompt = buildItems.filter(i => i.selected)
-      
+
       console.log('[TryOnLab] Character:', actualCharacter)
       console.log('[TryOnLab] Tier:', tier)
       console.log('[TryOnLab] Gender:', selectedGender)
       console.log('[TryOnLab] Selected items:', itemsForPrompt.length)
-      
+
       // Step 2: Generate image prompt from Llama (with gender)
       console.log('[TryOnLab] Calling Llama to generate image prompt...')
       const imagePrompt = await generateCosplayImagePrompt(
@@ -266,18 +266,18 @@ export default function TryOnLab() {
         selectedGender
       )
       console.log('[TryOnLab] Generated prompt:', imagePrompt)
-      
+
       // Step 3: Generate image with Dedalus API
       console.log('[TryOnLab] Calling Dedalus to generate image...')
       const base64Image = await generateCosplayImage(imagePrompt)
       console.log('[TryOnLab] Image generated successfully, converting to data URL...')
-      
+
       // Step 4: Convert base64 to displayable format
       const imageDataUrl = base64ToDataUrl(base64Image)
       setGeneratedImage(imageDataUrl)
       setLastGeneratedItems(itemsForPrompt.map(i => i.id))
       setLastGeneratedGender(selectedGender) // Track gender used for generation
-      
+
       console.log('[TryOnLab] ✅ Image generation complete!')
     } catch (error) {
       console.error('[TryOnLab] ❌ Image generation failed:', error)
@@ -564,13 +564,13 @@ export default function TryOnLab() {
           <div className="glass-panel p-5 rounded-lg border border-slate-800">
             <h3 className="text-slate-400 text-xs font-mono mb-4">&gt;&gt; COMPATIBILITY_ANALYSIS</h3>
             <div className="flex items-end gap-2 mb-2">
-              <span className="text-4xl font-display font-bold text-green-400 text-glow">{currentPreset.fitScore}%</span>
+              <span className="text-4xl font-display font-bold text-green-400 text-glow">{useMemo(() => Math.floor(Math.random() * (98 - 90 + 1)) + 90, [selectedPreset])}%</span>
               <span className="text-sm text-slate-500 mb-1">FIT_MATCH</span>
             </div>
             <div className="w-full bg-slate-900 rounded-full h-1.5 overflow-hidden">
               <div
                 className="bg-green-400 h-full shadow-[0_0_10px_#4ade80]"
-                style={{ width: `${currentPreset.fitScore}%` }}
+                style={{ width: `${useMemo(() => Math.floor(Math.random() * (98 - 90 + 1)) + 90, [selectedPreset])}%` }}
               />
             </div>
           </div>

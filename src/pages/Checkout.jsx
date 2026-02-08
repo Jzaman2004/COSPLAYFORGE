@@ -56,17 +56,17 @@ export default function Checkout() {
 
   // Sponsor Integration State
   const [isPriceLocked, setIsPriceLocked] = useState(false)
-  const [lockCountdown, setLockCountdown] = useState(14 * 60 + 23) // seconds
+  const [lockCountdown, setLockCountdown] = useState(24 * 60 * 60) // 24 hours in seconds
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [priceChanges, setPriceChanges] = useState({}) // Track price changes per item
 
   useEffect(() => {
     console.log('🔵 Checkout page mounted')
-    
+
     // Check auth
     const isAuthenticated = sessionStorage.getItem('isAuthenticated')
     console.log('Auth status:', isAuthenticated)
-    
+
     if (!isAuthenticated) {
       console.log('❌ Not authenticated, redirecting to auth')
       navigate('/auth')
@@ -78,7 +78,7 @@ export default function Checkout() {
     // Load cart data
     const cart = sessionStorage.getItem('cart')
     console.log('📦 Raw cart from sessionStorage:', cart)
-    
+
     if (cart) {
       try {
         const parsedCart = JSON.parse(cart)
@@ -111,12 +111,12 @@ export default function Checkout() {
     console.log('🔍 [Checkout] Image loading effect triggered')
     console.log('  - Cart data exists:', !!cartData)
     console.log('  - Has generatedImage:', !!cartData?.generatedImage)
-    
+
     if (!cartData) {
       console.log('⚠️ [Checkout] No cart data available')
       return
     }
-    
+
     // Check if we have a pre-generated image from TryOnLab
     if (cartData.generatedImage) {
       console.log('✅ [Checkout] Using pre-generated image from Simulation Lab')
@@ -126,7 +126,7 @@ export default function Checkout() {
       setIsGeneratingImage(false)
       return
     }
-    
+
     // If no pre-generated image, show message (shouldn't happen normally)
     console.log('⚠️ [Checkout] No pre-generated image found - user may have skipped TryOnLab')
     setImageError('No preview image available')
@@ -176,13 +176,14 @@ export default function Checkout() {
 
   const handleActivatePriceLock = () => {
     setIsPriceLocked(true)
-    setLockCountdown(14 * 60 + 23) // Reset to 14:23
+    setLockCountdown(24 * 60 * 60) // Reset to 24:00:00
   }
 
   const formatCountdown = (seconds) => {
-    const mins = Math.floor(seconds / 60)
+    const hrs = Math.floor(seconds / 3600)
+    const mins = Math.floor((seconds % 3600) / 60)
     const secs = seconds % 60
-    return `${mins}:${secs.toString().padStart(2, '0')}`
+    return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
   }
 
   const calculatePotentialSavings = () => {
@@ -509,7 +510,7 @@ export default function Checkout() {
                         <label className="text-xs text-slate-400 font-mono mb-1 block">CVC_/_CVV</label>
                         <div className="relative">
                           <input
-                            type="text"
+                            type="password"
                             name="cvc"
                             value={paymentInfo.cvc}
                             onChange={(e) => handleInputChange(e, 'payment')}
@@ -587,7 +588,7 @@ export default function Checkout() {
 
             {/* Enhanced Sponsor Integrations - Trading Terminal Style */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-6">
-              
+
               {/* SNOWFLAKE MARKET INTELLIGENCE */}
               <div className="glass-panel rounded-xl border border-cyan-500/40 overflow-hidden relative group hover:border-cyan-400/60 transition-all duration-300">
                 {/* Animated wave background */}
@@ -596,7 +597,7 @@ export default function Checkout() {
                   <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
                     <defs>
                       <pattern id="wave" x="0" y="0" width="100" height="20" patternUnits="userSpaceOnUse">
-                        <path d="M0 10 Q 25 0, 50 10 T 100 10" fill="none" stroke="currentColor" strokeWidth="1" className="text-cyan-400"/>
+                        <path d="M0 10 Q 25 0, 50 10 T 100 10" fill="none" stroke="currentColor" strokeWidth="1" className="text-cyan-400" />
                       </pattern>
                     </defs>
                     <rect width="100%" height="100%" fill="url(#wave)" />
@@ -610,7 +611,7 @@ export default function Checkout() {
                       <Sparkles className="w-4 h-4 text-cyan-400 animate-pulse" />
                       <span className="text-xs font-bold text-cyan-300 tracking-wider">SNOWFLAKE MARKET INTELLIGENCE</span>
                     </div>
-                    <button 
+                    <button
                       onClick={handleRefreshPrices}
                       disabled={isRefreshing}
                       className="text-cyan-400 hover:text-cyan-300 transition-colors"
@@ -643,7 +644,7 @@ export default function Checkout() {
                       const change = priceChanges[idx]
                       if (!change) return null
                       const isDecrease = parseFloat(change.percent) < 0
-                      
+
                       return (
                         <div key={idx} className="bg-black/40 rounded-lg p-2.5 border border-cyan-900/50 hover:border-cyan-700/50 transition-colors">
                           <div className="flex items-center justify-between mb-1.5">
@@ -688,11 +689,10 @@ export default function Checkout() {
               </div>
 
               {/* FLOWGLAD PRICE SHIELD */}
-              <div className={`glass-panel rounded-xl border-2 overflow-hidden relative transition-all duration-500 ${
-                isPriceLocked 
-                  ? 'border-blue-500/60 shadow-[0_0_30px_rgba(59,130,246,0.3)] animate-pulse' 
+              <div className={`glass-panel rounded-xl border-2 overflow-hidden relative transition-all duration-500 ${isPriceLocked
+                  ? 'border-blue-500/60 shadow-[0_0_30px_rgba(59,130,246,0.3)] animate-pulse'
                   : 'border-indigo-500/40 hover:border-indigo-400/60'
-              }`}>
+                }`}>
                 {/* Glow effect when locked */}
                 {isPriceLocked && (
                   <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-transparent to-indigo-500/10 animate-pulse"></div>
@@ -714,11 +714,10 @@ export default function Checkout() {
                   </div>
 
                   {/* Status Box */}
-                  <div className={`rounded-lg p-4 mb-4 border-2 ${
-                    isPriceLocked
+                  <div className={`rounded-lg p-4 mb-4 border-2 ${isPriceLocked
                       ? 'bg-gradient-to-br from-blue-900/40 to-blue-800/30 border-blue-500/50'
                       : 'bg-gradient-to-br from-indigo-900/40 to-purple-900/30 border-indigo-500/40'
-                  }`}>
+                    }`}>
                     <div className="text-center">
                       {isPriceLocked && (
                         <div className="flex items-center justify-center gap-2 mb-2">
@@ -735,11 +734,10 @@ export default function Checkout() {
                       <button
                         onClick={handleActivatePriceLock}
                         disabled={isPriceLocked}
-                        className={`w-full font-bold py-2.5 px-4 rounded shadow-lg transition flex items-center justify-center gap-2 ${
-                          isPriceLocked
+                        className={`w-full font-bold py-2.5 px-4 rounded shadow-lg transition flex items-center justify-center gap-2 ${isPriceLocked
                             ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white cursor-not-allowed opacity-90'
                             : 'bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white transform hover:scale-[1.02]'
-                        }`}
+                          }`}
                       >
                         {isPriceLocked ? (
                           <>
@@ -764,7 +762,7 @@ export default function Checkout() {
                         if (!change || parseFloat(change.percent) >= 0) return null
                         const savings = item.price * Math.abs(parseFloat(change.percent)) / 100
                         const lockedPrice = item.price - savings
-                        
+
                         return (
                           <div key={idx} className="bg-blue-900/20 rounded-lg p-2 border border-blue-800/40">
                             <div className="text-xs text-slate-200 mb-1 truncate">{item.name}</div>
@@ -887,9 +885,9 @@ export default function Checkout() {
                     </div>
                   ) : cosplayImage ? (
                     <div className="relative group">
-                      <img 
-                        src={cosplayImage} 
-                        alt="AI Generated Cosplay Preview" 
+                      <img
+                        src={cosplayImage}
+                        alt="AI Generated Cosplay Preview"
                         className="w-full aspect-square object-cover"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
