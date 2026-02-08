@@ -34,6 +34,9 @@ export default function Checkout() {
   const [isGeneratingImage, setIsGeneratingImage] = useState(false)
   const [imageError, setImageError] = useState(null)
 
+  // NFT State
+  const [nftStatus, setNftStatus] = useState('idle') // idle, minting
+
   // Checkout State
   const [shippingInfo, setShippingInfo] = useState({
     fullName: '',
@@ -690,8 +693,8 @@ export default function Checkout() {
 
               {/* FLOWGLAD PRICE SHIELD */}
               <div className={`glass-panel rounded-xl border-2 overflow-hidden relative transition-all duration-500 ${isPriceLocked
-                  ? 'border-blue-500/60 shadow-[0_0_30px_rgba(59,130,246,0.3)] animate-pulse'
-                  : 'border-indigo-500/40 hover:border-indigo-400/60'
+                ? 'border-blue-500/60 shadow-[0_0_30px_rgba(59,130,246,0.3)] animate-pulse'
+                : 'border-indigo-500/40 hover:border-indigo-400/60'
                 }`}>
                 {/* Glow effect when locked */}
                 {isPriceLocked && (
@@ -715,8 +718,8 @@ export default function Checkout() {
 
                   {/* Status Box */}
                   <div className={`rounded-lg p-4 mb-4 border-2 ${isPriceLocked
-                      ? 'bg-gradient-to-br from-blue-900/40 to-blue-800/30 border-blue-500/50'
-                      : 'bg-gradient-to-br from-indigo-900/40 to-purple-900/30 border-indigo-500/40'
+                    ? 'bg-gradient-to-br from-blue-900/40 to-blue-800/30 border-blue-500/50'
+                    : 'bg-gradient-to-br from-indigo-900/40 to-purple-900/30 border-indigo-500/40'
                     }`}>
                     <div className="text-center">
                       {isPriceLocked && (
@@ -735,8 +738,8 @@ export default function Checkout() {
                         onClick={handleActivatePriceLock}
                         disabled={isPriceLocked}
                         className={`w-full font-bold py-2.5 px-4 rounded shadow-lg transition flex items-center justify-center gap-2 ${isPriceLocked
-                            ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white cursor-not-allowed opacity-90'
-                            : 'bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white transform hover:scale-[1.02]'
+                          ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white cursor-not-allowed opacity-90'
+                          : 'bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white transform hover:scale-[1.02]'
                           }`}
                       >
                         {isPriceLocked ? (
@@ -962,21 +965,44 @@ export default function Checkout() {
                   <div className="text-center">
                     <span className="text-[10px] text-slate-200 font-mono tracking-wider font-semibold">POWERED BY SOLANA</span>
                   </div>
-                  <button
-                    onClick={() => {
-                      const blob = new Blob([''], { type: 'text/plain' })
-                      const link = document.createElement('a')
-                      link.href = URL.createObjectURL(blob)
-                      link.download = 'nft licencee.txt'
-                      link.click()
-                      URL.revokeObjectURL(link.href)
-                      console.log('💾 NFT license downloaded as nft licencee.txt')
-                    }}
-                    className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-3 px-4 rounded shadow-[0_0_15px_rgba(99,102,241,0.4)] transition transform hover:scale-[1.02] flex items-center justify-center gap-2"
-                  >
-                    <SolanaIcon className="w-4 h-4" />
-                    <span className="font-mono text-xs tracking-wider">NFT_CERT</span>
-                  </button>
+                  {nftStatus === 'idle' ? (
+                    <button
+                      onClick={() => setNftStatus('minting')}
+                      className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-3 px-4 rounded shadow-[0_0_15px_rgba(99,102,241,0.4)] transition transform hover:scale-[1.02] flex items-center justify-center gap-2"
+                    >
+                      <SolanaIcon className="w-4 h-4" />
+                      <span className="font-mono text-xs tracking-wider">NFT_CERT</span>
+                    </button>
+                  ) : (
+                    <div className="bg-indigo-950/50 border border-indigo-500/50 rounded-lg p-3 text-center">
+                      <div className="flex items-center justify-center gap-2 mb-3">
+                        <Loader className="w-3 h-3 text-indigo-400 animate-spin" />
+                        <span className="text-[10px] font-mono text-indigo-300 font-bold tracking-wider">MINTING_IN_PROGRESS</span>
+                      </div>
+
+                      {/* Progress Bar */}
+                      <div className="w-full bg-slate-800 rounded-full h-1.5 mb-3 overflow-hidden relative">
+                        <div className="absolute inset-0 bg-indigo-500/20 animate-pulse"></div>
+                        <motion.div
+                          initial={{ width: "0%" }}
+                          animate={{ width: "25%" }}
+                          transition={{ duration: 2, ease: "easeOut" }}
+                          className="bg-gradient-to-r from-indigo-500 to-purple-500 h-full rounded-full relative z-10"
+                        />
+                      </div>
+
+                      <div className="bg-indigo-900/20 rounded p-2 border border-indigo-500/20">
+                        <div className="flex items-center justify-center gap-1.5 mb-1">
+                          <Clock className="w-3 h-3 text-indigo-400" />
+                          <span className="text-[10px] text-slate-300 font-mono">EST_TIME:</span>
+                          <span className="text-[10px] text-white font-mono font-bold">4-8 HOURS</span>
+                        </div>
+                        <p className="text-[9px] text-slate-500 font-mono leading-tight">
+                          Network congestion may vary.
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Design File Download Button */}
