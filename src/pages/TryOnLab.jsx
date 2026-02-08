@@ -3,7 +3,7 @@ import { Eye, Volume2, ShoppingCart, Loader, Sun, Moon, Check, X } from 'lucide-
 import { useState, useEffect, useRef } from 'react'
 import { tryOnPresets, characterVoices, dedalusAlert } from '../simulation/sponsorMocks'
 import { generateTryOnImage, generateOutfitVariations } from '../services/generationService'
-import { generateCharacterImage, generateCharacterVariation, regenerateCharacterImage } from '../services/googleAiService'
+import { generateCharacterImage, generateCharacterVariation, regenerateCharacterImage } from '../services/stabilityAiService'
 
 export default function TryOnLab() {
   const navigate = useNavigate()

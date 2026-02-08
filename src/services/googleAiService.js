@@ -1,8 +1,15 @@
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 🎨 GOOGLE AI STUDIO - CHARACTER-SPECIFIC IMAGE GENERATION
+// 🎨 GOOGLE CLOUD VERTEX AI IMAGEN - CHARACTER-SPECIFIC IMAGE GENERATION
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 const API_KEY = import.meta.env.VITE_GOOGLE_AI_KEY
+const PROJECT_ID = import.meta.env.VITE_GOOGLE_PROJECT_ID || 'cosplayforge-imagen'
+const LOCATION = import.meta.env.VITE_GOOGLE_LOCATION || 'us-central1'
+
+// Vertex AI Imagen endpoint
+const getImagenEndpoint = () => {
+  return `https://${LOCATION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${LOCATION}/endpoints/openapi/imagegeneration:predict`
+}
 
 // Character-specific mock images (fallback)
 const CHARACTER_MOCK_IMAGES = {
@@ -132,26 +139,24 @@ export const generateCharacterImage = async (character, gender = 'male', cartIte
     }
 
     // Try to call actual API - with proper Vertex AI format
-    const projectId = 'cosplayforge-ai' // Placeholder for demo
-    const location = 'us-central1'
+    const endpoint = getImagenEndpoint()
+    console.log(`[Google AI] Endpoint configured: ${endpoint.substring(0, 80)}...`)
     
-    const response = await fetch(
-      `https://${location}-aiplatform.googleapis.com/v1beta/projects/${projectId}/locations/${location}/models/imagegeneration:predict`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${API_KEY}`
-        },
-        body: JSON.stringify({
-          instances: [{
-            prompt: prompt,
-            sampleImageSize: 400
-          }],
-          parameters: {
-            sampleCount: 1
-          }
-        })
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${API_KEY}`
+      },
+      body: JSON.stringify({
+        instances: [{
+          prompt: prompt
+        }],
+        parameters: {
+          sampleCount: 1,
+          aspectRatio: '1:1'
+        }
+      })
       }
     )
 
@@ -222,28 +227,24 @@ export const generateCharacterVariation = async (character, gender = 'male') => 
     }
 
     // Try API call
-    const projectId = 'cosplayforge-ai'
-    const location = 'us-central1'
+    const endpoint = getImagenEndpoint()
     
-    const response = await fetch(
-      `https://${location}-aiplatform.googleapis.com/v1beta/projects/${projectId}/locations/${location}/models/imagegeneration:predict`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${API_KEY}`
-        },
-        body: JSON.stringify({
-          instances: [{
-            prompt: prompt,
-            sampleImageSize: 400
-          }],
-          parameters: {
-            sampleCount: 1
-          }
-        })
-      }
-    )
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${API_KEY}`
+      },
+      body: JSON.stringify({
+        instances: [{
+          prompt: prompt
+        }],
+        parameters: {
+          sampleCount: 1,
+          aspectRatio: '1:1'
+        }
+      })
+    })
 
     if (!response.ok) {
       console.warn('[Google AI] Variation API call failed, using mock')
@@ -308,28 +309,24 @@ export const regenerateCharacterImage = async (character, gender = 'male') => {
     }
 
     // Try API call
-    const projectId = 'cosplayforge-ai'
-    const location = 'us-central1'
+    const endpoint = getImagenEndpoint()
     
-    const response = await fetch(
-      `https://${location}-aiplatform.googleapis.com/v1beta/projects/${projectId}/locations/${location}/models/imagegeneration:predict`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${API_KEY}`
-        },
-        body: JSON.stringify({
-          instances: [{
-            prompt: prompt,
-            sampleImageSize: 400
-          }],
-          parameters: {
-            sampleCount: 1
-          }
-        })
-      }
-    )
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${API_KEY}`
+      },
+      body: JSON.stringify({
+        instances: [{
+          prompt: prompt
+        }],
+        parameters: {
+          sampleCount: 1,
+          aspectRatio: '1:1'
+        }
+      })
+    })
 
     if (!response.ok) {
       console.warn('[Google AI] Regenerate API call failed, using mock')
