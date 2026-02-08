@@ -3,10 +3,11 @@ import { Eye, Volume2, ShoppingCart, Loader, Sun, Moon, Check, X } from 'lucide-
 import { useState, useEffect, useRef } from 'react'
 import { tryOnPresets, characterVoices, dedalusAlert } from '../simulation/sponsorMocks'
 import { generateTryOnImage, generateOutfitVariations } from '../services/generationService'
+import { generateCharacterImage, generateCharacterVariation, regenerateCharacterImage } from '../services/googleAiService'
 
 export default function TryOnLab() {
   const navigate = useNavigate()
-  const [selectedPreset, setSelectedPreset] = useState('spiderman')
+  const [selectedPreset, setSelectedPreset] = useState('male')
   const [playingVoice, setPlayingVoice] = useState(null)
   const [selectedItem, setSelectedItem] = useState(null)
   const [generatedImage, setGeneratedImage] = useState(null)
@@ -165,10 +166,13 @@ export default function TryOnLab() {
   const generateNewImage = async () => {
     setIsGenerating(true)
     try {
-      const description = currentPreset.description || `${characterName}'s costume with ${selectedItem}`
-      const blob = await generateTryOnImage(characterName, description, 'realistic photorealistic cosplay')
-      const url = URL.createObjectURL(blob)
-      setGeneratedImage(url)
+      // Use actual character name from tier data, falls back to preset capitalization for display
+      const actualCharacter = tierData?.characterName || 'Gojo'
+      const result = await regenerateCharacterImage(actualCharacter, selectedPreset)
+      setGeneratedImage(result.imageUrl)
+      if (result.mock) {
+        console.log('[TryOnLab] Using mock image (API not available)')
+      }
     } catch (error) {
       console.error('Generation failed:', error)
     } finally {
@@ -179,14 +183,13 @@ export default function TryOnLab() {
   const generateVariations = async () => {
     setIsGenerating(true)
     try {
-      const outfitDescriptions = [
-        `${characterName}'s casual outfit variation`,
-        `${characterName}'s formal outfit variation`,
-        `${characterName}'s modern street style`
-      ]
-      const results = await generateOutfitVariations(characterName, outfitDescriptions)
-      setVariations(results)
+      const actualCharacter = tierData?.characterName || 'Gojo'
+      const result = await generateCharacterVariation(actualCharacter, selectedPreset)
+      setVariations([result.imageUrl])
       setShowVariations(true)
+      if (result.mock) {
+        console.log('[TryOnLab] Using mock variation (API not available)')
+      }
     } catch (error) {
       console.error('Variation generation failed:', error)
     } finally {
@@ -311,8 +314,8 @@ export default function TryOnLab() {
 
             {/* Preset selector */}
             <div className="mt-6 space-y-3">
-              <p className="text-slate-700 dark:text-gray-300 text-sm font-semibold">Select Character:</p>
-              <div className="grid grid-cols-3 gap-2">
+              <p className="text-slate-700 dark:text-gray-300 text-sm font-semibold">Select Fit Model:</p>
+              <div className="grid grid-cols-2 gap-2">
                 {Object.keys(tryOnPresets).map((key) => (
                   <button
                     key={key}
@@ -323,9 +326,8 @@ export default function TryOnLab() {
                         : 'bg-slate-200 dark:bg-gray-800 text-slate-700 dark:text-gray-300 hover:bg-slate-300 dark:hover:bg-gray-700 border border-slate-300 dark:border-gray-700'
                     }`}
                   >
-                    {key === 'spiderman' && '🕷️'}
-                    {key === 'masterchief' && '💪'}
-                    {key === 'asuka' && '💜'}
+                    {key === 'male' && '👨'}
+                    {key === 'female' && '👩'}
                     {' '}
                     {key.charAt(0).toUpperCase() + key.slice(1)}
                   </button>

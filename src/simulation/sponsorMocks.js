@@ -222,7 +222,7 @@ export const dedalusAlert = {
 // 4️⃣ FEATHERLESS + NANO BANANA (TRY-ON MAGIC)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 export const tryOnPresets = {
-  spiderman: {
+  male: {
     baseModel: "/nanoBanana/base-mannequin.png",
     layers: {
       suit: "/nanoBanana/spiderman-suit-overlay.png",
@@ -233,18 +233,7 @@ export const tryOnPresets = {
     fitScore: 94,
     adjustments: ["Tighten chest", "Add shoulder padding"]
   },
-  masterchief: {
-    baseModel: "/nanoBanana/base-mannequin.png",
-    layers: {
-      armorPlates: "/nanoBanana/mjolnir-armor-overlay.png",
-      undersuit: "/nanoBanana/bodysuit-underlay.png",
-      visor: "/nanoBanana/visor-reflection.png"
-    },
-    physicsNotes: "Rigid body simulation for armor piece interactions",
-    fitScore: 92,
-    weight: "2.1kg simulated armor weight"
-  },
-  asuka: {
+  female: {
     baseModel: "/nanoBanana/base-mannequin.png",
     layers: {
       plugsuit: "/nanoBanana/plugsuit-base-red.png",
@@ -261,24 +250,17 @@ export const tryOnPresets = {
 // 5️⃣ ELEVENLABS (VOICE CLONING)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 export const characterVoices = {
-  masterchief: {
+  male: {
     clipUrl: "/voiceClips/masterchief-tip.mp3",
-    transcript: "\"Use contact cement, Spartan. The Mjolnir suits demand precision.\"",
-    voiceModel: "cortana-inspired",
+    transcript: "\"Use contact cement. The suits demand precision.\"",
+    voiceModel: "professional",
     waveform: [0.1, 0.3, 0.5, 0.7, 0.6, 0.4, 0.2, 0.1],
     duration: 4.2
   },
-  saitama: {
-    clipUrl: "/voiceClips/saitama-motivation.mp3",
-    transcript: "\"Just do it. Don't overthink the costume. It's just fabric.\"",
-    voiceModel: "calm-monotone",
-    waveform: [0.05, 0.15, 0.25, 0.3, 0.25, 0.15, 0.05],
-    duration: 3.8
-  },
-  asuka: {
+  female: {
     clipUrl: "/voiceClips/asuka-confidence.mp3",
     transcript: "\"This suit shows who you really are. Make sure you're ready.\"",
-    voiceModel: "confident-tsundere",
+    voiceModel: "confident",
     waveform: [0.2, 0.4, 0.6, 0.8, 0.7, 0.5, 0.3, 0.1],
     duration: 4.5
   }
