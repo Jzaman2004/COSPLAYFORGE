@@ -4,10 +4,11 @@ import { useState, useEffect } from 'react'
 import { tryOnPresets, characterVoices } from '../simulation/sponsorMocks'
 import { generateTryOnImage, generateOutfitVariations } from '../services/generationService'
 import { motion, AnimatePresence } from 'framer-motion'
+import { generateCharacterImage, generateCharacterVariation, regenerateCharacterImage } from '../services/stabilityAiService'
 
 export default function TryOnLab() {
   const navigate = useNavigate()
-  const [selectedPreset, setSelectedPreset] = useState('spiderman')
+  const [selectedPreset, setSelectedPreset] = useState('male')
   const [playingVoice, setPlayingVoice] = useState(null)
   const [selectedItem, setSelectedItem] = useState(null)
   const [generatedImage, setGeneratedImage] = useState(null)
@@ -171,10 +172,13 @@ export default function TryOnLab() {
   const generateNewImage = async () => {
     setIsGenerating(true)
     try {
-      const description = currentPreset.description || `${displayCharacterName}'s costume with ${selectedItem}`
-      const blob = await generateTryOnImage(displayCharacterName, description, 'realistic photorealistic cosplay')
-      const url = URL.createObjectURL(blob)
-      setGeneratedImage(url)
+      // Use actual character name from tier data, falls back to preset capitalization for display
+      const actualCharacter = tierData?.characterName || 'Gojo'
+      const result = await regenerateCharacterImage(actualCharacter, selectedPreset)
+      setGeneratedImage(result.imageUrl)
+      if (result.mock) {
+        console.log('[TryOnLab] Using mock image (API not available)')
+      }
     } catch (error) {
       console.error('Generation failed:', error)
     } finally {
@@ -185,14 +189,13 @@ export default function TryOnLab() {
   const generateVariations = async () => {
     setIsGenerating(true)
     try {
-      const outfitDescriptions = [
-        `${displayCharacterName}'s casual outfit variation`,
-        `${displayCharacterName}'s formal outfit variation`,
-        `${displayCharacterName}'s modern street style`
-      ]
-      const results = await generateOutfitVariations(displayCharacterName, outfitDescriptions)
-      setVariations(results)
+      const actualCharacter = tierData?.characterName || 'Gojo'
+      const result = await generateCharacterVariation(actualCharacter, selectedPreset)
+      setVariations([result.imageUrl])
       setShowVariations(true)
+      if (result.mock) {
+        console.log('[TryOnLab] Using mock variation (API not available)')
+      }
     } catch (error) {
       console.error('Variation generation failed:', error)
     } finally {
@@ -322,223 +325,245 @@ export default function TryOnLab() {
             </div>
 
             {/* Preset selector */}
-            {!tierData && (
-              <div className="glass-panel p-4 rounded-lg border border-slate-800">
-                <p className="text-slate-400 text-xs font-mono mb-3">&gt;&gt; MANUAL_PRESET_OVERRIDE:</p>
-                <div className="grid grid-cols-3 gap-3">
-                  {Object.keys(tryOnPresets).map((key) => (
-                    <button
-                      key={key}
-                      onClick={() => setSelectedPreset(key)}
-                      className={`py-2 rounded text-xs font-mono transition border ${selectedPreset === key
-                        ? 'bg-neon-cyan/20 border-neon-cyan text-white'
-                        : 'bg-black/40 border-slate-700 text-slate-500 hover:border-slate-500'
-                        }`}
-                    >
-                      {key.toUpperCase()}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Item Customization - Dynamic based on selected build tier */}
-          <div className="lg:col-span-2">
-            <h3 className="font-mono text-sm text-neon-cyan mb-4 flex items-center gap-2">
-              <Shield className="w-4 h-4" /> REQUIRED_ASSETS
-              <span className="h-px flex-1 bg-neon-cyan/30"></span>
-            </h3>
-
-            <div className="space-y-4 max-h-[800px] overflow-y-auto custom-scrollbar pr-2">
-              {buildItems.length > 0 ? (
-                buildItems.map((item) => (
-                  <div
-                    key={item.id}
-                    className={`glass-panel p-4 rounded-lg border transition-all duration-300 relative group ${item.selected
-                      ? selectedItem === item.id
-                        ? 'border-neon-cyan bg-neon-cyan/5'
-                        : 'border-green-500/50 bg-green-500/5'
-                      : 'border-slate-800 opacity-60 grayscale hover:opacity-100'
-                      }`}
-                  >
-                    {/* Checkbox */}
-                    <div
-                      className="absolute top-4 right-4 z-10 cursor-pointer"
-                      onClick={(e) => { e.stopPropagation(); toggleItemSelection(item.id) }}
-                    >
-                      <div className={`w-5 h-5 rounded border flex items-center justify-center transition ${item.selected
-                        ? 'bg-green-500 border-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]'
-                        : 'bg-transparent border-slate-600'
-                        }`}>
-                        {item.selected && <Check className="w-3 h-3 text-black font-bold" />}
-                      </div>
-                    </div>
-
-                    <div onClick={() => !item.selected || setSelectedItem(item.id)} className="flex gap-4 cursor-pointer">
-                      {/* Icon Box */}
-                      <div className="w-16 h-16 rounded border border-white/10 bg-black/50 flex items-center justify-center text-2xl flex-shrink-0">
-                        {item.name.toLowerCase().includes('wig') || item.name.toLowerCase().includes('hair') ? '💇' :
-                          item.name.toLowerCase().includes('glove') ? '🧤' :
-                            item.name.toLowerCase().includes('shoe') || item.name.toLowerCase().includes('boot') ? '👟' :
-                              item.name.toLowerCase().includes('paint') ? '🎨' :
-                                item.name.toLowerCase().includes('foam') || item.name.toLowerCase().includes('armor') ? '🛡️' :
-                                  item.name.toLowerCase().includes('fabric') || item.name.toLowerCase().includes('cloth') ? '🧵' :
-                                    item.name.toLowerCase().includes('mask') || item.name.toLowerCase().includes('blindfold') ? '🎭' :
-                                      '👕'}
-                      </div>
-
-                      <div className="flex-1">
-                        <div className="flex justify-between pr-8">
-                          <h4 className="font-bold text-white text-sm mb-1">{item.name}</h4>
-                        </div>
-                        <p className="text-xs text-slate-400 mb-2 line-clamp-1">{item.description}</p>
-
-                        <div className="flex items-center gap-4 text-[10px] font-mono text-slate-500">
-                          <span className="flex items-center gap-1">
-                            <span className="w-2 h-2 rounded-full bg-slate-600"></span>
-                            {item.material}
-                          </span>
-                          <span className={item.inStock ? 'text-green-400' : 'text-red-400'}>
-                            {item.inStock ? 'IN_STOCK' : 'BACKORDER'}
-                          </span>
-                          <span className="text-yellow-500">★ {item.rating}</span>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-col justify-between items-end pt-8">
-                        <span className="font-mono text-neon-cyan text-lg">${item.price.toFixed(0)}</span>
-                        <a
-                          href={item.sellerLink}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="text-[10px] text-blue-400 hover:text-blue-300 underline"
-                        >
-                          {item.seller} ↗
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-slate-500 text-center py-10">NO DATA FOUND</div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Fit Score & Stats */}
-        <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="glass-panel p-5 rounded-lg border border-slate-800">
-            <h3 className="text-slate-400 text-xs font-mono mb-4">&gt;&gt; COMPATIBILITY_ANALYSIS</h3>
-            <div className="flex items-end gap-2 mb-2">
-              <span className="text-4xl font-display font-bold text-green-400 text-glow">{currentPreset.fitScore}%</span>
-              <span className="text-sm text-slate-500 mb-1">FIT_MATCH</span>
-            </div>
-            <div className="w-full bg-slate-900 rounded-full h-1.5 overflow-hidden">
-              <div
-                className="bg-green-400 h-full shadow-[0_0_10px_#4ade80]"
-                style={{ width: `${currentPreset.fitScore}%` }}
-              />
-            </div>
-          </div>
-
-          <div className="glass-panel p-5 rounded-lg border border-slate-800">
-            <h3 className="text-slate-400 text-xs font-mono mb-2">&gt;&gt; PHYSICS_ENGINE_NOTES</h3>
-            <p className="text-slate-300 text-sm font-light italic opacity-80">
-              "{currentPreset.physicsNotes}"
-            </p>
-            {currentPreset.weight && (
-              <div className="mt-3 text-xs font-mono text-neon-purple">
-                &gt;&gt; EST_WEIGHT: {currentPreset.weight}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Outfit Variations */}
-        <AnimatePresence>
-          {showVariations && variations.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              className="mt-8 glass-panel border border-neon-purple/50 rounded-lg p-6 relative"
+<<<<<<< HEAD
+  {
+    !tierData && (
+      <div className="glass-panel p-4 rounded-lg border border-slate-800">
+        <p className="text-slate-400 text-xs font-mono mb-3">&gt;&gt; MANUAL_PRESET_OVERRIDE:</p>
+        <div className="grid grid-cols-3 gap-3">
+          {Object.keys(tryOnPresets).map((key) => (
+            <button
+              key={key}
+              onClick={() => setSelectedPreset(key)}
+              className={`py-2 rounded text-xs font-mono transition border ${selectedPreset === key
+                ? 'bg-neon-cyan/20 border-neon-cyan text-white'
+                : 'bg-black/40 border-slate-700 text-slate-500 hover:border-slate-500'
+                }`}
             >
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-neon-purple to-neon-cyan"></div>
-              <h3 className="text-white font-display font-bold mb-4 flex items-center gap-2">
-                <Activity className="w-5 h-5 text-neon-purple" />
-                GENERATED_VARIATIONS
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {variations.map((variation) => (
-                  <div key={variation.id} className="bg-black/50 rounded border border-white/10 overflow-hidden hover:border-neon-cyan transition cursor-pointer group" onClick={() => {
-                    if (variation.url) setGeneratedImage(variation.url)
-                  }}>
-                    {variation.url && (
-                      <div className="relative overflow-hidden h-40">
-                        <img src={variation.url} className="w-full h-full object-cover group-hover:scale-110 transition duration-700" />
-                      </div>
-                    )}
-                    <div className="p-3">
-                      <p className="text-xs font-mono text-slate-300">{variation.description}</p>
+              {key.toUpperCase()}
+            </button>
+          ))}
+        </div>
+=======
+            <div className="mt-6 space-y-3">
+          <p className="text-slate-700 dark:text-gray-300 text-sm font-semibold">Select Fit Model:</p>
+          <div className="grid grid-cols-2 gap-2">
+            {Object.keys(tryOnPresets).map((key) => (
+              <button
+                key={key}
+                onClick={() => setSelectedPreset(key)}
+                className={`p-2 rounded text-sm font-semibold transition ${selectedPreset === key
+                    ? 'bg-blue-600 text-white border border-blue-400'
+                    : 'bg-slate-200 dark:bg-gray-800 text-slate-700 dark:text-gray-300 hover:bg-slate-300 dark:hover:bg-gray-700 border border-slate-300 dark:border-gray-700'
+                  }`}
+              >
+                {key === 'male' && '👨'}
+                {key === 'female' && '👩'}
+                {' '}
+                {key.charAt(0).toUpperCase() + key.slice(1)}
+              </button>
+            ))}
+>>>>>>> origin/Jawad
+          </div>
+            )}
+        </div>
+
+        {/* Item Customization - Dynamic based on selected build tier */}
+        <div className="lg:col-span-2">
+          <h3 className="font-mono text-sm text-neon-cyan mb-4 flex items-center gap-2">
+            <Shield className="w-4 h-4" /> REQUIRED_ASSETS
+            <span className="h-px flex-1 bg-neon-cyan/30"></span>
+          </h3>
+
+          <div className="space-y-4 max-h-[800px] overflow-y-auto custom-scrollbar pr-2">
+            {buildItems.length > 0 ? (
+              buildItems.map((item) => (
+                <div
+                  key={item.id}
+                  className={`glass-panel p-4 rounded-lg border transition-all duration-300 relative group ${item.selected
+                    ? selectedItem === item.id
+                      ? 'border-neon-cyan bg-neon-cyan/5'
+                      : 'border-green-500/50 bg-green-500/5'
+                    : 'border-slate-800 opacity-60 grayscale hover:opacity-100'
+                    }`}
+                >
+                  {/* Checkbox */}
+                  <div
+                    className="absolute top-4 right-4 z-10 cursor-pointer"
+                    onClick={(e) => { e.stopPropagation(); toggleItemSelection(item.id) }}
+                  >
+                    <div className={`w-5 h-5 rounded border flex items-center justify-center transition ${item.selected
+                      ? 'bg-green-500 border-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]'
+                      : 'bg-transparent border-slate-600'
+                      }`}>
+                      {item.selected && <Check className="w-3 h-3 text-black font-bold" />}
                     </div>
                   </div>
-                ))}
-              </div>
-              <button
-                onClick={() => setShowVariations(false)}
-                className="absolute top-4 right-4 text-slate-500 hover:text-white"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
 
-        {/* Sticky Cart Footer - Cyberpunk Style */}
-        <div className="fixed bottom-0 left-0 w-full bg-slate-950/80 backdrop-blur-md border-t border-neon-cyan/20 z-50 py-4 px-6">
-          <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-8">
-              <div>
-                <div className="text-[10px] text-slate-500 font-mono tracking-widest">SELECTED</div>
-                <div className="text-2xl font-display font-bold text-white">
-                  {selectedItems.length} <span className="text-sm text-slate-600 font-sans font-normal">/ {buildItems.length}</span>
-                </div>
-              </div>
-              <div>
-                <div className="text-[10px] text-slate-500 font-mono tracking-widest">TOTAL_COST</div>
-                <div className="text-2xl font-display font-bold text-neon-cyan text-glow">
-                  ${cartTotal.toFixed(2)}
-                </div>
-              </div>
-              <div>
-                <div className="text-[10px] text-slate-500 font-mono tracking-widest">RATING</div>
-                <div className="text-lg font-bold text-yellow-500">
-                  ★ {averageRating}
-                </div>
-              </div>
-            </div>
+                  <div onClick={() => !item.selected || setSelectedItem(item.id)} className="flex gap-4 cursor-pointer">
+                    {/* Icon Box */}
+                    <div className="w-16 h-16 rounded border border-white/10 bg-black/50 flex items-center justify-center text-2xl flex-shrink-0">
+                      {item.name.toLowerCase().includes('wig') || item.name.toLowerCase().includes('hair') ? '💇' :
+                        item.name.toLowerCase().includes('glove') ? '🧤' :
+                          item.name.toLowerCase().includes('shoe') || item.name.toLowerCase().includes('boot') ? '👟' :
+                            item.name.toLowerCase().includes('paint') ? '🎨' :
+                              item.name.toLowerCase().includes('foam') || item.name.toLowerCase().includes('armor') ? '🛡️' :
+                                item.name.toLowerCase().includes('fabric') || item.name.toLowerCase().includes('cloth') ? '🧵' :
+                                  item.name.toLowerCase().includes('mask') || item.name.toLowerCase().includes('blindfold') ? '🎭' :
+                                    '👕'}
+                    </div>
 
-            <div className="w-full md:w-auto">
-              <button
-                onClick={handleCheckout}
-                disabled={selectedItems.length === 0}
-                className="w-full md:w-auto px-8 py-3 bg-neon-cyan/10 hover:bg-neon-cyan/20 border border-neon-cyan text-neon-cyan font-bold font-mono tracking-widest rounded transition flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed group"
-              >
-                <span>INITIALIZE_CHECKOUT</span>
-                <ShoppingCart className="w-4 h-4 group-hover:animate-bounce" />
-              </button>
-              {selectedItems.length === 0 && (
-                <div className="text-[10px] text-red-500 text-center font-mono mt-1 animate-pulse">
-                  &gt;&gt; ERROR: NO_ASSETS_SELECTED
+                    <div className="flex-1">
+                      <div className="flex justify-between pr-8">
+                        <h4 className="font-bold text-white text-sm mb-1">{item.name}</h4>
+                      </div>
+                      <p className="text-xs text-slate-400 mb-2 line-clamp-1">{item.description}</p>
+
+                      <div className="flex items-center gap-4 text-[10px] font-mono text-slate-500">
+                        <span className="flex items-center gap-1">
+                          <span className="w-2 h-2 rounded-full bg-slate-600"></span>
+                          {item.material}
+                        </span>
+                        <span className={item.inStock ? 'text-green-400' : 'text-red-400'}>
+                          {item.inStock ? 'IN_STOCK' : 'BACKORDER'}
+                        </span>
+                        <span className="text-yellow-500">★ {item.rating}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col justify-between items-end pt-8">
+                      <span className="font-mono text-neon-cyan text-lg">${item.price.toFixed(0)}</span>
+                      <a
+                        href={item.sellerLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-[10px] text-blue-400 hover:text-blue-300 underline"
+                      >
+                        {item.seller} ↗
+                      </a>
+                    </div>
+                  </div>
                 </div>
-              )}
-            </div>
+              ))
+            ) : (
+              <div className="text-slate-500 text-center py-10">NO DATA FOUND</div>
+            )}
           </div>
         </div>
       </div>
+
+        {/* Fit Score & Stats */ }
+    <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="glass-panel p-5 rounded-lg border border-slate-800">
+        <h3 className="text-slate-400 text-xs font-mono mb-4">&gt;&gt; COMPATIBILITY_ANALYSIS</h3>
+        <div className="flex items-end gap-2 mb-2">
+          <span className="text-4xl font-display font-bold text-green-400 text-glow">{currentPreset.fitScore}%</span>
+          <span className="text-sm text-slate-500 mb-1">FIT_MATCH</span>
+        </div>
+        <div className="w-full bg-slate-900 rounded-full h-1.5 overflow-hidden">
+          <div
+            className="bg-green-400 h-full shadow-[0_0_10px_#4ade80]"
+            style={{ width: `${currentPreset.fitScore}%` }}
+          />
+        </div>
+      </div>
+
+      <div className="glass-panel p-5 rounded-lg border border-slate-800">
+        <h3 className="text-slate-400 text-xs font-mono mb-2">&gt;&gt; PHYSICS_ENGINE_NOTES</h3>
+        <p className="text-slate-300 text-sm font-light italic opacity-80">
+          "{currentPreset.physicsNotes}"
+        </p>
+        {currentPreset.weight && (
+          <div className="mt-3 text-xs font-mono text-neon-purple">
+            &gt;&gt; EST_WEIGHT: {currentPreset.weight}
+          </div>
+        )}
+      </div>
     </div>
+
+    {/* Outfit Variations */ }
+    <AnimatePresence>
+      {showVariations && variations.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0 }}
+          className="mt-8 glass-panel border border-neon-purple/50 rounded-lg p-6 relative"
+        >
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-neon-purple to-neon-cyan"></div>
+          <h3 className="text-white font-display font-bold mb-4 flex items-center gap-2">
+            <Activity className="w-5 h-5 text-neon-purple" />
+            GENERATED_VARIATIONS
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {variations.map((variation) => (
+              <div key={variation.id} className="bg-black/50 rounded border border-white/10 overflow-hidden hover:border-neon-cyan transition cursor-pointer group" onClick={() => {
+                if (variation.url) setGeneratedImage(variation.url)
+              }}>
+                {variation.url && (
+                  <div className="relative overflow-hidden h-40">
+                    <img src={variation.url} className="w-full h-full object-cover group-hover:scale-110 transition duration-700" />
+                  </div>
+                )}
+                <div className="p-3">
+                  <p className="text-xs font-mono text-slate-300">{variation.description}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <button
+            onClick={() => setShowVariations(false)}
+            className="absolute top-4 right-4 text-slate-500 hover:text-white"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </motion.div>
+      )}
+    </AnimatePresence>
+
+    {/* Sticky Cart Footer - Cyberpunk Style */ }
+    <div className="fixed bottom-0 left-0 w-full bg-slate-950/80 backdrop-blur-md border-t border-neon-cyan/20 z-50 py-4 px-6">
+      <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="flex items-center gap-8">
+          <div>
+            <div className="text-[10px] text-slate-500 font-mono tracking-widest">SELECTED</div>
+            <div className="text-2xl font-display font-bold text-white">
+              {selectedItems.length} <span className="text-sm text-slate-600 font-sans font-normal">/ {buildItems.length}</span>
+            </div>
+          </div>
+          <div>
+            <div className="text-[10px] text-slate-500 font-mono tracking-widest">TOTAL_COST</div>
+            <div className="text-2xl font-display font-bold text-neon-cyan text-glow">
+              ${cartTotal.toFixed(2)}
+            </div>
+          </div>
+          <div>
+            <div className="text-[10px] text-slate-500 font-mono tracking-widest">RATING</div>
+            <div className="text-lg font-bold text-yellow-500">
+              ★ {averageRating}
+            </div>
+          </div>
+        </div>
+
+        <div className="w-full md:w-auto">
+          <button
+            onClick={handleCheckout}
+            disabled={selectedItems.length === 0}
+            className="w-full md:w-auto px-8 py-3 bg-neon-cyan/10 hover:bg-neon-cyan/20 border border-neon-cyan text-neon-cyan font-bold font-mono tracking-widest rounded transition flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed group"
+          >
+            <span>INITIALIZE_CHECKOUT</span>
+            <ShoppingCart className="w-4 h-4 group-hover:animate-bounce" />
+          </button>
+          {selectedItems.length === 0 && (
+            <div className="text-[10px] text-red-500 text-center font-mono mt-1 animate-pulse">
+              &gt;&gt; ERROR: NO_ASSETS_SELECTED
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+      </div >
+    </div >
   )
-}
+  }
