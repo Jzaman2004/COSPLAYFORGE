@@ -97,19 +97,29 @@ export default function TryOnLab() {
       const basePrice = apiPrice !== null ? apiPrice : (priceMatch ? parseFloat(priceMatch[0].replace('$', '')) : null)
 
       // Generate seller based on tier
+      // Generate seller based on tier and create robust search links
       let seller, sellerLink
+      const searchQuery = encodeURIComponent(`${itemName} ${characterName} cosplay`)
+
       if (tierType === 'diy') {
-        const diyStores = ['Dollar Tree', 'Thrift Store', 'Goodwill', 'Hobby Lobby', 'Michaels']
+        const diyStores = ['Amazon', 'Ebay', 'Spirit Halloween', 'Michaels', 'ThriftBooks']
         seller = diyStores[index % diyStores.length]
-        sellerLink = `https://www.${seller.toLowerCase().replace(/\s+/g, '')}.com`
+        if (seller === 'Amazon') sellerLink = `https://www.amazon.com/s?k=${searchQuery}`
+        else if (seller === 'Ebay') sellerLink = `https://www.ebay.com/sch/i.html?_nkw=${searchQuery}`
+        else if (seller === 'Ebay') sellerLink = `https://www.ebay.com/sch/i.html?_nkw=${searchQuery}`
+        else sellerLink = `https://www.google.com/search?q=${searchQuery}+site:${seller.toLowerCase().replace(/\s+/g, '')}.com`
       } else if (tierType === 'budget') {
         const budgetStores = ['Amazon', 'AliExpress', 'CosplaySky', 'EZCosplay', 'Miccostumes']
         seller = budgetStores[index % budgetStores.length]
-        sellerLink = seller === 'Amazon' ? `https://amazon.com/s?k=${encodeURIComponent(itemName + ' ' + characterName)}` : `https://www.${seller.toLowerCase()}.com`
+        if (seller === 'Amazon') sellerLink = `https://www.amazon.com/s?k=${searchQuery}`
+        else if (seller === 'AliExpress') sellerLink = `https://www.aliexpress.com/w/wholesale-${itemName.replace(/\s+/g, '-')}.html?SearchText=${searchQuery}`
+        else sellerLink = `https://www.google.com/search?q=${searchQuery}+site:${seller.toLowerCase()}.com`
       } else { // premium
-        const premiumStores = ['ProCosplay', 'CosplayFU', 'Etsy Custom', 'EZCosplay Premium', 'Local Seamstress']
+        const premiumStores = ['ProCosplay', 'CosplayFU', 'Etsy', 'EZCosplay Premium', 'SimCosplay']
         seller = premiumStores[index % premiumStores.length]
-        sellerLink = seller.includes('Etsy') ? `https://etsy.com/search?q=${encodeURIComponent(itemName + ' ' + characterName)}` : `https://www.${seller.toLowerCase().replace(/\s+/g, '')}.com`
+        if (seller === 'Etsy') sellerLink = `https://www.etsy.com/search?q=${searchQuery}`
+        else if (seller === 'ProCosplay') sellerLink = `https://www.procosplay.com/search?q=${itemName}`
+        else sellerLink = `https://www.google.com/search?q=${searchQuery}+site:${seller.toLowerCase().replace(/\s+/g, '')}.com`
       }
 
       // Generate price if not present (Fallback)
@@ -165,45 +175,45 @@ export default function TryOnLab() {
     })
   }
 
+  const [lastGeneratedItems, setLastGeneratedItems] = useState([])
+
+  // Check if current selection differs from what's generated
+  const hasChanges = JSON.stringify(selectedItems.map(i => i.id).sort()) !== JSON.stringify(lastGeneratedItems.sort())
+
   const currentPreset = tryOnPresets[selectedPreset]
   // const characterName = selectedPreset.charAt(0).toUpperCase() + selectedPreset.slice(1)
   // Logic fix: try to use tierData name first, else preset name
   const displayCharacterName = tierData ? tierData.characterName : (selectedPreset.charAt(0).toUpperCase() + selectedPreset.slice(1))
 
-  // Generate try-on image when preset changes
+  // Generate try-on image when preset changes (initial load)
   useEffect(() => {
-    generateNewImage()
-  }, [selectedPreset])
+    if (buildItems.length > 0 && lastGeneratedItems.length === 0) {
+      generateNewImage()
+    }
+  }, [buildItems]) // Run once when items are loaded
 
+  /* 
+   * Generates new image based on selected items.
+   * Only runs if there are pending changes or initial load.
+   */
   const generateNewImage = async () => {
     setIsGenerating(true)
     try {
       // Use actual character name from tier data, falls back to preset capitalization for display
       const actualCharacter = tierData?.characterName || 'Gojo'
-      const result = await regenerateCharacterImage(actualCharacter, selectedPreset)
+
+      // Pass selected items to generation
+      const itemsForPrompt = buildItems.filter(i => i.selected)
+
+      const result = await regenerateCharacterImage(actualCharacter, selectedPreset, itemsForPrompt)
       setGeneratedImage(result.imageUrl)
+      setLastGeneratedItems(itemsForPrompt.map(i => i.id)) // Update tracking
+
       if (result.mock) {
         console.log('[TryOnLab] Using mock image (API not available)')
       }
     } catch (error) {
       console.error('Generation failed:', error)
-    } finally {
-      setIsGenerating(false)
-    }
-  }
-
-  const generateVariations = async () => {
-    setIsGenerating(true)
-    try {
-      const actualCharacter = tierData?.characterName || 'Gojo'
-      const result = await generateCharacterVariation(actualCharacter, selectedPreset)
-      setVariations([result.imageUrl])
-      setShowVariations(true)
-      if (result.mock) {
-        console.log('[TryOnLab] Using mock variation (API not available)')
-      }
-    } catch (error) {
-      console.error('Variation generation failed:', error)
     } finally {
       setIsGenerating(false)
     }
@@ -307,26 +317,31 @@ export default function TryOnLab() {
             </div>
 
             {/* Generation Controls */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4">
               <button
                 onClick={generateNewImage}
-                disabled={isGenerating}
-                className="group relative py-3 bg-transparent overflow-hidden rounded border border-neon-cyan/50 hover:border-neon-cyan transition"
+                disabled={isGenerating || !hasChanges}
+                className={`group relative py-3 overflow-hidden rounded border transition flex items-center justify-center gap-2
+                  ${isGenerating || !hasChanges
+                    ? 'bg-slate-900 border-slate-800 text-slate-600 cursor-not-allowed'
+                    : 'bg-transparent border-neon-cyan/50 hover:border-neon-cyan text-neon-cyan'
+                  }`}
               >
-                <div className="absolute inset-0 bg-neon-cyan/10 group-hover:bg-neon-cyan/20 transition"></div>
-                <span className="relative text-neon-cyan font-mono text-sm font-bold flex items-center justify-center gap-2">
-                  <Scan className="w-4 h-4" /> REGENERATE
-                </span>
-              </button>
-              <button
-                onClick={generateVariations}
-                disabled={isGenerating}
-                className="group relative py-3 bg-transparent overflow-hidden rounded border border-neon-purple/50 hover:border-neon-purple transition"
-              >
-                <div className="absolute inset-0 bg-neon-purple/10 group-hover:bg-neon-purple/20 transition"></div>
-                <span className="relative text-neon-purple font-mono text-sm font-bold flex items-center justify-center gap-2">
-                  <Activity className="w-4 h-4" /> VARIATIONS
-                </span>
+                {!isGenerating && hasChanges && <div className="absolute inset-0 bg-neon-cyan/10 group-hover:bg-neon-cyan/20 transition"></div>}
+
+                {isGenerating ? (
+                  <span className="relative font-mono text-sm font-bold flex items-center gap-2">
+                    <Loader className="w-4 h-4 animate-spin" /> PROCESSING...
+                  </span>
+                ) : !hasChanges ? (
+                  <span className="relative font-mono text-sm font-bold flex items-center gap-2">
+                    <Check className="w-4 h-4" /> SYSTEM_SYNCED
+                  </span>
+                ) : (
+                  <span className="relative font-mono text-sm font-bold flex items-center gap-2">
+                    <Scan className="w-4 h-4" /> REGENERATE_PREVIEW
+                  </span>
+                )}
               </button>
             </div>
 

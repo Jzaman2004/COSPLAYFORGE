@@ -112,17 +112,29 @@ const CHARACTER_PROMPTS = {
 }
 
 // Generate character-specific prompt
-export const generateCharacterSpecificPrompt = (character, gender = 'male', promptIndex = 0) => {
+export const generateCharacterSpecificPrompt = (character, gender = 'male', promptIndex = 0, items = []) => {
+  // If items are provided, focus on the costume on a generic mannequin
+  if (items && items.length > 0) {
+    const itemDetails = items.map(i => i.name || i).join(', ')
+    // REVERTED: User requested specific character visualization, not neutral mannequin
+    const neutralPrompts = [
+      `full body cosplay portrait of ${character} wearing ${itemDetails}. white background, studio lighting, photorealistic, 8k, focus on fabric textures and materials`,
+      `cinematic shot of ${character} in costume components: ${itemDetails}. professional photography, detailed textures, 8k, white background`,
+      `studio photography of ${character} cosplay, featuring: ${itemDetails}. white backdrop, high resolution, perfect lighting`
+    ]
+    return neutralPrompts[promptIndex % 3]
+  }
+
+  // Legacy fallback for character presets (if no items passed)
   const characterLower = character?.toLowerCase() || 'gojo'
   const characterPrompts = CHARACTER_PROMPTS[characterLower]
 
   if (!characterPrompts) {
     console.log(`Character "${character}" not in presets, generating dynamic prompt`)
-    // Dynamic generation fallbacks
     const dynamicPrompts = [
-      `full body portrait, ${gender} cosplayer wearing detailed ${character} costume, standing pose, white background, photorealistic, high detail, professional cosplay photography, studio lighting, 8k resolution`,
-      `full body shot, ${gender} as ${character}, screen accurate costume, confident pose, white background, detailed cosplay photography, soft shadows`,
-      `full body portrait, ${gender} cosplayer in ${character} outfit, intricate details, perfect lighting, white backdrop, professional photography, masterpiece`
+      `full body portrait, ${gender} cosplayer as ${character}, standing pose, white background, photorealistic, high detail, professional cosplay photography`,
+      `full body shot, ${gender} portraying ${character}, screen accurate costume, confident pose, white background, detailed cosplay photography`,
+      `full body portrait, ${gender} cosplayer in ${character} outfit, intricate details, perfect lighting, white backdrop`
     ]
     return dynamicPrompts[promptIndex % 3]
   }
@@ -136,7 +148,7 @@ export const generateCharacterImage = async (character, gender = 'male', cartIte
   const characterLower = character?.toLowerCase() || 'gojo'
 
   try {
-    const prompt = generateCharacterSpecificPrompt(character, gender, 0)
+    const prompt = generateCharacterSpecificPrompt(character, gender, 0, cartItems)
 
     console.log(`[Stability AI] Generating image for ${character} (${gender})`)
     console.log(`[Stability AI] Prompt: ${prompt.substring(0, 100)}...`)
@@ -325,11 +337,11 @@ export const generateCharacterVariation = async (character, gender = 'male') => 
 }
 
 // Regenerate with completely fresh prompt
-export const regenerateCharacterImage = async (character, gender = 'male') => {
+export const regenerateCharacterImage = async (character, gender = 'male', cartItems = []) => {
   const characterLower = character?.toLowerCase() || 'gojo'
 
   try {
-    const prompt = generateCharacterSpecificPrompt(character, gender, 2)
+    const prompt = generateCharacterSpecificPrompt(character, gender, 2, cartItems)
 
     console.log(`[Stability AI] Regenerating fresh image for ${character}`)
 
