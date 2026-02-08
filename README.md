@@ -5,7 +5,6 @@
 [![React](https://img.shields.io/badge/React-18-blue)](https://reactjs.org/)
 [![Vite](https://img.shields.io/badge/Vite-5-purple)](https://vitejs.dev/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3-cyan)](https://tailwindcss.com/)
-[![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 
 ---
 
@@ -1420,7 +1419,7 @@ A: Only Groq and Dedalus keys are required for core functionality. Google AI and
 A: To demonstrate value without requiring complex API integrations for every sponsor. Can be upgraded to real APIs later.
 
 **Q: Can I use this project commercially?**  
-A: Check individual API terms of service. This project is MIT licensed, but API usage has separate terms.
+A: Check individual API terms of service.
 
 **Q: How do I add more characters?**  
 A: Simply type any character name in CharacterScan. Llama will generate appropriate details.
@@ -1515,32 +1514,6 @@ Use GitHub Issues with label `enhancement`:
 - Deployment instructions
 - Troubleshooting section
 - Contributing guidelines
-
----
-
-## 📄 License
-
-MIT License
-
-Copyright (c) 2026 CosplayForge
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
 
 ---
 
