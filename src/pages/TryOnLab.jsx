@@ -1,10 +1,12 @@
 import { useNavigate } from 'react-router-dom'
 import { Eye, Volume2, ShoppingCart, Loader, Check, X, Zap, Scan, Activity, Shield } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { tryOnPresets, characterVoices } from '../simulation/sponsorMocks'
 import { generateTryOnImage, generateOutfitVariations } from '../services/generationService'
 import { motion, AnimatePresence } from 'framer-motion'
 import { generateCharacterImage, generateCharacterVariation, regenerateCharacterImage } from '../services/stabilityAiService'
+import { generateCosplayImagePrompt } from '../services/llamaService'
+import { generateCosplayImage, base64ToDataUrl } from '../services/dedalusImageService'
 
 export default function TryOnLab() {
   const navigate = useNavigate()
@@ -17,6 +19,7 @@ export default function TryOnLab() {
   const [variations, setVariations] = useState([])
   const [tierData, setTierData] = useState(null)
   const [buildItems, setBuildItems] = useState([])
+  const [selectedGender, setSelectedGender] = useState('male') // Gender for AI generation
 
   useEffect(() => {
     document.documentElement.classList.add('dark')
@@ -71,15 +74,27 @@ export default function TryOnLab() {
 
   // Scroll to top and navigate to checkout
   const handleCheckout = () => {
+    console.log('[TryOnLab] Checkout initiated')
+    console.log('  - Generated image exists:', !!generatedImage)
+    console.log('  - Selected gender:', selectedGender)
+    console.log('  - Selected items count:', selectedItems.length)
+    
     window.scrollTo({ top: 0, behavior: 'smooth' })
     // Navigate after scroll completes
     setTimeout(() => {
-      sessionStorage.setItem('cart', JSON.stringify({
+      const cartData = {
         items: selectedItems,
         total: cartTotal,
         characterName: tierData?.characterName,
-        tier: tierData?.tier
-      }))
+        tier: tierData?.tier,
+        generatedImage: generatedImage, // Save the generated image
+        gender: selectedGender // Save selected gender
+      }
+      console.log('[TryOnLab] Saving cart to sessionStorage:', {
+        ...cartData,
+        generatedImage: generatedImage ? 'IMAGE_DATA_PRESENT' : 'NO_IMAGE'
+      })
+      sessionStorage.setItem('cart', JSON.stringify(cartData))
       navigate('/auth', { state: { from: '/checkout' } })
     }, 500)
   }
@@ -176,44 +191,96 @@ export default function TryOnLab() {
   }
 
   const [lastGeneratedItems, setLastGeneratedItems] = useState([])
-
-  // Check if current selection differs from what's generated
-  const hasChanges = JSON.stringify(selectedItems.map(i => i.id).sort()) !== JSON.stringify(lastGeneratedItems.sort())
+  const [lastGeneratedGender, setLastGeneratedGender] = useState('male')
 
   const currentPreset = tryOnPresets[selectedPreset]
   // const characterName = selectedPreset.charAt(0).toUpperCase() + selectedPreset.slice(1)
   // Logic fix: try to use tierData name first, else preset name
   const displayCharacterName = tierData ? tierData.characterName : (selectedPreset.charAt(0).toUpperCase() + selectedPreset.slice(1))
 
-  // Generate try-on image when preset changes (initial load)
+  // Memoize selected item IDs to avoid unnecessary re-renders
+  const selectedItemIds = useMemo(() => {
+    return selectedItems.map(i => i.id).sort().join(',')
+  }, [selectedItems])
+
+  // Auto-generate image when items load, cart changes, or gender changes
   useEffect(() => {
-    if (buildItems.length > 0 && lastGeneratedItems.length === 0) {
-      generateNewImage()
+    console.log('[TryOnLab] useEffect triggered')
+    console.log('  - buildItems.length:', buildItems.length)
+    console.log('  - tierData:', tierData)
+    console.log('  - selectedGender:', selectedGender)
+    console.log('  - selectedItemIds:', selectedItemIds)
+    console.log('  - lastGeneratedGender:', lastGeneratedGender)
+    console.log('  - lastGeneratedItems:', lastGeneratedItems)
+    
+    if (buildItems.length > 0 && tierData) {
+      // Check if this is the first generation (no previous generation)
+      const isFirstGeneration = lastGeneratedItems.length === 0
+      // Check if gender changed
+      const genderChanged = selectedGender !== lastGeneratedGender
+      // Check if item selection changed
+      const lastItemsString = lastGeneratedItems.sort().join(',')
+      const itemsChanged = selectedItemIds !== lastItemsString
+      
+      console.log('  - isFirstGeneration:', isFirstGeneration)
+      console.log('  - genderChanged:', genderChanged)
+      console.log('  - itemsChanged:', itemsChanged)
+      console.log('  - lastItemsString:', lastItemsString)
+      
+      if (isFirstGeneration || genderChanged || itemsChanged) {
+        console.log('  ✅ Generating new image...')
+        generateNewImage()
+      } else {
+        console.log('  ⏭️ No changes, skipping generation')
+      }
+    } else {
+      console.log('  ⚠️ Waiting for data (buildItems or tierData not ready)')
     }
-  }, [buildItems]) // Run once when items are loaded
+  }, [tierData, selectedGender, selectedItemIds]) // Track tierData, gender, and selected items
 
   /* 
-   * Generates new image based on selected items.
-   * Only runs if there are pending changes or initial load.
+   * Generates new image using Dedalus AI (same workflow as checkout)
+   * Character → Tier → Cart → Gender → Llama Prompt → Image Prompt → Image Generation
    */
   const generateNewImage = async () => {
+    console.log('[TryOnLab] Starting AI image generation...')
     setIsGenerating(true)
+    
     try {
-      // Use actual character name from tier data, falls back to preset capitalization for display
+      // Step 1: Get character, tier, gender, and selected items
       const actualCharacter = tierData?.characterName || 'Gojo'
-
-      // Pass selected items to generation
+      const tier = tierData?.tier || 'budget'
       const itemsForPrompt = buildItems.filter(i => i.selected)
-
-      const result = await regenerateCharacterImage(actualCharacter, selectedPreset, itemsForPrompt)
-      setGeneratedImage(result.imageUrl)
-      setLastGeneratedItems(itemsForPrompt.map(i => i.id)) // Update tracking
-
-      if (result.mock) {
-        console.log('[TryOnLab] Using mock image (API not available)')
-      }
+      
+      console.log('[TryOnLab] Character:', actualCharacter)
+      console.log('[TryOnLab] Tier:', tier)
+      console.log('[TryOnLab] Gender:', selectedGender)
+      console.log('[TryOnLab] Selected items:', itemsForPrompt.length)
+      
+      // Step 2: Generate image prompt from Llama (with gender)
+      console.log('[TryOnLab] Calling Llama to generate image prompt...')
+      const imagePrompt = await generateCosplayImagePrompt(
+        actualCharacter,
+        tier,
+        itemsForPrompt,
+        selectedGender
+      )
+      console.log('[TryOnLab] Generated prompt:', imagePrompt)
+      
+      // Step 3: Generate image with Dedalus API
+      console.log('[TryOnLab] Calling Dedalus to generate image...')
+      const base64Image = await generateCosplayImage(imagePrompt)
+      console.log('[TryOnLab] Image generated successfully, converting to data URL...')
+      
+      // Step 4: Convert base64 to displayable format
+      const imageDataUrl = base64ToDataUrl(base64Image)
+      setGeneratedImage(imageDataUrl)
+      setLastGeneratedItems(itemsForPrompt.map(i => i.id))
+      setLastGeneratedGender(selectedGender) // Track gender used for generation
+      
+      console.log('[TryOnLab] ✅ Image generation complete!')
     } catch (error) {
-      console.error('Generation failed:', error)
+      console.error('[TryOnLab] ❌ Image generation failed:', error)
     } finally {
       setIsGenerating(false)
     }
@@ -284,7 +351,7 @@ export default function TryOnLab() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* 3D MODEL AREA */}
           <div className="lg:col-span-2 space-y-6">
-            <div className="aspect-[4/3] bg-slate-900 rounded-xl border border-neon-cyan/30 flex items-center justify-center overflow-hidden relative glass-panel group">
+            <div className="aspect-square bg-slate-900 rounded-xl border border-neon-cyan/30 flex items-center justify-center overflow-hidden relative glass-panel group">
               {/* Scanline overlay */}
               <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-20 pointer-events-none bg-[length:100%_4px,3px_100%]"></div>
 
@@ -316,30 +383,70 @@ export default function TryOnLab() {
               )}
             </div>
 
+            {/* Gender Selection */}
+            <div className="glass-panel p-4 rounded-lg border border-slate-800">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-mono text-slate-400">COSPLAYER_GENDER</span>
+                <div className="text-[10px] font-mono text-neon-cyan px-2 py-0.5 bg-neon-cyan/10 border border-neon-cyan/30 rounded">
+                  REAL-TIME_AI
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => setSelectedGender('male')}
+                  disabled={isGenerating}
+                  className={`relative py-2.5 rounded border transition flex items-center justify-center gap-2 font-mono text-sm font-bold
+                    ${selectedGender === 'male'
+                      ? 'bg-neon-cyan/20 border-neon-cyan text-neon-cyan'
+                      : 'bg-slate-900 border-slate-700 text-slate-400 hover:border-slate-600'
+                    }
+                    ${isGenerating ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+                  `}
+                >
+                  {selectedGender === 'male' && (
+                    <div className="absolute inset-0 bg-neon-cyan/10 animate-pulse rounded"></div>
+                  )}
+                  <span className="relative">MALE</span>
+                </button>
+                <button
+                  onClick={() => setSelectedGender('female')}
+                  disabled={isGenerating}
+                  className={`relative py-2.5 rounded border transition flex items-center justify-center gap-2 font-mono text-sm font-bold
+                    ${selectedGender === 'female'
+                      ? 'bg-neon-purple/20 border-neon-purple text-neon-purple'
+                      : 'bg-slate-900 border-slate-700 text-slate-400 hover:border-slate-600'
+                    }
+                    ${isGenerating ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+                  `}
+                >
+                  {selectedGender === 'female' && (
+                    <div className="absolute inset-0 bg-neon-purple/10 animate-pulse rounded"></div>
+                  )}
+                  <span className="relative">FEMALE</span>
+                </button>
+              </div>
+            </div>
+
             {/* Generation Controls */}
             <div className="grid grid-cols-1 gap-4">
               <button
                 onClick={generateNewImage}
-                disabled={isGenerating || !hasChanges}
+                disabled={isGenerating}
                 className={`group relative py-3 overflow-hidden rounded border transition flex items-center justify-center gap-2
-                  ${isGenerating || !hasChanges
+                  ${isGenerating
                     ? 'bg-slate-900 border-slate-800 text-slate-600 cursor-not-allowed'
                     : 'bg-transparent border-neon-cyan/50 hover:border-neon-cyan text-neon-cyan'
                   }`}
               >
-                {!isGenerating && hasChanges && <div className="absolute inset-0 bg-neon-cyan/10 group-hover:bg-neon-cyan/20 transition"></div>}
+                {!isGenerating && <div className="absolute inset-0 bg-neon-cyan/10 group-hover:bg-neon-cyan/20 transition"></div>}
 
                 {isGenerating ? (
                   <span className="relative font-mono text-sm font-bold flex items-center gap-2">
-                    <Loader className="w-4 h-4 animate-spin" /> PROCESSING...
-                  </span>
-                ) : !hasChanges ? (
-                  <span className="relative font-mono text-sm font-bold flex items-center gap-2">
-                    <Check className="w-4 h-4" /> SYSTEM_SYNCED
+                    <Loader className="w-4 h-4 animate-spin" /> GENERATING_AI_PREVIEW...
                   </span>
                 ) : (
                   <span className="relative font-mono text-sm font-bold flex items-center gap-2">
-                    <Scan className="w-4 h-4" /> REGENERATE_PREVIEW
+                    <Scan className="w-4 h-4" /> REGENERATE_AI_PREVIEW
                   </span>
                 )}
               </button>
@@ -374,7 +481,7 @@ export default function TryOnLab() {
               <span className="h-px flex-1 bg-neon-cyan/30"></span>
             </h3>
 
-            <div className="space-y-4 max-h-[800px] overflow-y-auto custom-scrollbar pr-2">
+            <div className="space-y-4 max-h-[800px] overflow-y-auto no-scrollbar pr-2">
               {buildItems.length > 0 ? (
                 buildItems.map((item) => (
                   <div

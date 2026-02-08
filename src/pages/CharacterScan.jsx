@@ -33,9 +33,14 @@ export default function CharacterScan() {
 
   const formatCharacterName = (filename) => {
     if (!filename) return ''
+    // Remove file extension (e.g., .jpg, .png, .jpeg, .webp)
     const base = filename.replace(/\.[^/.]+$/, '')
-    const spaced = base.replace(/[_-]+/g, ' ').trim()
-    return spaced.replace(/\b\w/g, (char) => char.toUpperCase())
+    // Replace underscores, hyphens, and dots with spaces
+    const spaced = base.replace(/[_\-\.]+/g, ' ').trim()
+    // Capitalize first letter of each word
+    const capitalized = spaced.replace(/\b\w/g, (char) => char.toUpperCase())
+    console.log(`🏷️ Formatted filename: "${filename}" → "${capitalized}"`)
+    return capitalized
   }
 
   // Handle file upload
@@ -68,13 +73,24 @@ export default function CharacterScan() {
       const nameFromFile = formatCharacterName(uploadedFileName)
       const characterName = selectedCharacter || (uploadedFileName ? nameFromFile : 'Unknown Character')
 
-      // 1. Generate Description & Tiers in parallel (or sequential if dependency needed)
-      console.log("Starting analysis for:", characterName)
+      // 1. Generate Description first, then use it for better tier generation
+      console.log("=== CHARACTER SCAN STARTING ===")
+      console.log("Uploaded filename:", uploadedFileName)
+      console.log("Formatted name from file:", nameFromFile)
+      console.log("Final character name:", characterName)
+      console.log("Selected character:", selectedCharacter)
 
       const MIN_LOADING_TIME = 2000 // 2 seconds
-      const [desc, tiers] = await Promise.all([
-        generateCharacterProfile(characterName),
-        generateCosplayTiers(characterName),
+      
+      // Generate description first
+      console.log("📝 Generating character profile...")
+      const desc = await generateCharacterProfile(characterName)
+      console.log("✅ Profile received:", desc.substring(0, 100) + "...")
+      
+      // Then generate tiers with the description as context for better results
+      console.log("🎨 Generating cosplay tiers...")
+      const [tiers, _] = await Promise.all([
+        generateCosplayTiers(characterName, desc),
         new Promise(resolve => setTimeout(resolve, MIN_LOADING_TIME))
       ])
 

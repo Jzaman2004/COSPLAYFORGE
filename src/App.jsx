@@ -8,6 +8,9 @@ import TryOnLab from './pages/TryOnLab'
 import AuthPage from './pages/AuthPage'
 import Checkout from './pages/Checkout'
 
+// Components
+import Footer from './components/Footer'
+
 function App() {
   return (
     <Router>
@@ -30,25 +33,8 @@ function App() {
           <Route path="/checkout" element={<Checkout />} />
         </Routes>
 
-        {/* FOOTER WITH SPONSOR INFO */}
-        <footer className="py-8 text-center text-xs md:text-sm border-t border-slate-300 dark:border-gray-700 mt-12 w-full bg-slate-50 dark:bg-slate-950">
-          <div className="w-full px-4">
-            <div className="mb-4 text-slate-600 dark:text-gray-400">🎭 The Illusion Architecture™</div>
-            <div className="text-indigo-600 dark:text-purple-300 text-xs font-mono mb-2">
-              A hackathon simulation showcasing 11 sponsor integrations
-            </div>
-            <div className="mt-3 px-4 py-2 bg-yellow-100 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700/30 rounded-lg inline-block">
-              <div className="text-yellow-700 dark:text-yellow-300 text-xs font-semibold mb-1">⚠️ Demo Disclaimer</div>
-              <div className="text-yellow-700 dark:text-yellow-200/80 text-xs max-w-2xl">
-                All AI/sponsor responses are pre-recorded or simulated for demonstration reliability.
-                No real API calls are made during this presentation.
-              </div>
-            </div>
-            <div className="text-slate-500 dark:text-gray-600 text-xs mt-4">
-              Built with React • Vite • Tailwind • Framer Motion
-            </div>
-          </div>
-        </footer>
+        {/* Footer Component */}
+        <Footer />
       </div>
     </Router>
   )

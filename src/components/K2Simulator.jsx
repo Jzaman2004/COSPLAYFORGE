@@ -44,7 +44,7 @@ export default function K2Simulator({ isActive, onComplete }) {
           <div className="text-xl font-display font-bold text-white tracking-widest text-glow">K2 REASONING ENGINE</div>
         </div>
 
-        <div className="space-y-2 font-mono text-sm mb-6 h-48 overflow-y-auto custom-scrollbar">
+        <div className="space-y-2 font-mono text-sm mb-6 h-48 overflow-hidden">
           {thoughts.map((thought, idx) => (
             <div key={idx} className="flex items-center gap-3 animate-fadeIn">
               <span className="text-slate-600">[{new Date().toISOString().split('T')[1].slice(0, -1)}]</span>

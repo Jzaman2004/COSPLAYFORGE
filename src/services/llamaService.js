@@ -7,10 +7,42 @@ const API_URL = import.meta.env.VITE_DEDALUS_API_URL
 const TEXT_MODEL = 'llama-3.3-70b-versatile' // Groq's fastest model
 
 export async function generateCharacterProfile(characterName) {
-  try {
-    const systemPrompt = `You are a cosplay expert and character researcher. Based on the character name provided, write a short 2-3 sentence bio of the character and their most recognizable costume elements. Do not mention sources or browsing.`
+  console.log('=== GENERATING CHARACTER PROFILE ===')
+  console.log('Character Name:', characterName)
+  console.log('API_URL:', API_URL)
+  console.log('API_KEY exists:', !!API_KEY)
+  
+  if (!API_KEY || !API_URL) {
+    console.error('❌ Missing API credentials')
+    return `${characterName} - API credentials not configured. Please check your environment variables.`
+  }
 
-    const userPrompt = `Character name: ${characterName}`
+  try {
+    const systemPrompt = `You are an expert anime, manga, video game, and pop culture character analyst specializing in costume design. 
+
+When given a character name, use your knowledge base to provide a detailed costume description for cosplay purposes.
+
+IMPORTANT: Research and describe ${characterName} based on their canonical appearance from their source material.`
+
+    const userPrompt = `Describe ${characterName}'s costume and appearance in 3-4 detailed sentences for cosplay creation.
+
+Include in your description:
+1. What anime/game/series they are from
+2. EXACT colors of their outfit (e.g., "midnight black", "bright orange", "emerald green")
+3. SPECIFIC clothing items (e.g., "long-sleeved jacket", "pleated skirt", "combat boots")
+4. KEY accessories (e.g., "metal headband", "fingerless gloves", "blindfold")
+5. DISTINCTIVE features (e.g., "spiky blonde hair", "red cape", "twin tails")
+
+Example format:
+"[Character] from [Series] wears a [specific description]. The outfit consists of [exact colors and items]. Key accessories include [specific items], and [distinctive features]."
+
+DO NOT use vague phrases like:
+- "iconic design"
+- "recognizable costume"
+- "signature look"
+- "distinctive style"
+
+Instead, name the ACTUAL costume pieces, colors, and accessories.`
 
     const response = await fetch(`${API_URL}/chat/completions`, {
       method: 'POST',
@@ -24,20 +56,32 @@ export async function generateCharacterProfile(characterName) {
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
-        temperature: 0.6,
-        max_tokens: 220
+        temperature: 0.7,
+        max_tokens: 350,
+        top_p: 0.9
       })
     })
 
+    console.log('API Response status:', response.status)
+
     if (!response.ok) {
-      throw new Error('Character profile generation failed')
+      const errorText = await response.text()
+      console.error('❌ API Error:', response.status, errorText)
+      throw new Error(`API returned ${response.status}: ${errorText}`)
     }
 
     const data = await response.json()
-    return data.choices[0].message.content
+    console.log('✅ Profile generated successfully')
+    const content = data.choices[0].message.content
+    console.log('Generated profile:', content)
+    
+    return content
   } catch (error) {
-    console.error('Character profile error:', error)
-    return `A popular character with a distinctive silhouette and signature accessories. The costume features recognizable colors and iconic details that make it ideal for cosplay.`
+    console.error('❌ Character profile generation error:', error)
+    console.error('Error details:', error.message)
+    
+    // Return a more helpful error message
+    return `${characterName} - Error generating description. This could be due to API issues. The character name was detected from your image filename. Please ensure your environment variables are configured correctly.`
   }
 }
 
@@ -115,49 +159,63 @@ export async function generateCosplayTiers(characterName, context = '') {
   console.log('API_URL:', API_URL)
 
   try {
-    const systemPrompt = `You are an expert cosplay designer. Generate build tiers ONLY for ${characterName}. 
+    const systemPrompt = `You are an expert cosplay designer specializing in costume breakdown and material sourcing. Generate build tiers ONLY for ${characterName}.
 
 **CONTEXT & ANALYSIS:**
-${context ? `Use this specific analysis of the character's costume:\n"${context}"` : `Analyze the character ${characterName} based on their standard appearance.`}
+${context ? `IMPORTANT - Use this detailed analysis of the character's costume:\n"${context}"\n\nExtract specific details: colors, materials, textures, accessories, and unique features from this description.` : `Research ${characterName}'s standard appearance from their source material (anime/game/series). Identify their iconic costume elements.`}
 
-**STEP 1: ANALYZE THE CHARACTER'S COSTUME COMPONENTS**
-Before generating tiers, identify key costume components specific to ${characterName} based on the context provided.:
-- What colors are their outfit? (e.g., black robe, orange jacket, yellow jumpsuit)
-- What distinctive accessories? (e.g., blindfold, headband, cape, wig style)
-- What special features? (e.g., bald head, twin tails, whisker marks)
-- What clothing items? (e.g., robe, jacket, dress, pants)
+**STEP 1: ANALYZE ${characterName.toUpperCase()}'S COSTUME COMPONENTS**
+Before generating tiers, identify 6-8 key costume components specific to ${characterName}:
+- EXACT colors of outfit pieces (e.g., "midnight black robe", "bright orange jacket", "metallic gold armor")
+- SPECIFIC accessories with details (e.g., "black blindfold over eyes", "orange headband with metal plate", "red cape with white star")
+- DISTINCTIVE features (e.g., "spiky blonde hair", "mechanical arm", "twin tailed turquoise wig")
+- KEY clothing items (e.g., "long black robe", "orange track jacket", "white pants", "combat boots")
+- PROPS or WEAPONS (e.g., "wooden sword", "shield", "staff")
+- UNIQUE characteristics (e.g., "cat ears", "wings", "tattoos")
 
-**STEP 2: GENERATE TIERS USING ONLY THOSE COMPONENTS**
+**STEP 2: GENERATE REALISTIC, CHARACTER-SPECIFIC TIERS**
 
-**FORBIDDEN GENERIC PHRASES - DO NOT USE:**
-- "Basic fabric from thrift stores"
-- "EVA foam"
-- "Craft supplies"
-- "Accessories" (be specific: headband, belt, etc.)
-- "Sewing machine"
-- "Budget cosplay suppliers"
-- "Imported fabrics"
-- "Generic wig" (specify color/style)
+For EACH tier, create 7 items that directly correspond to ${characterName}'s costume components.
+
+**STRICT RULES:**
+1. Every item MUST mention ${characterName} OR specific costume details
+2. Include EXACT colors from the character (e.g., "midnight black", "vibrant orange", "electric blue")
+3. Be SPECIFIC about what part of the costume each item creates
+4. NO GENERIC ITEMS without character context
+
+**FORBIDDEN GENERIC PHRASES:**
+- "Basic fabric" → Say "Black cotton fabric for [character]'s robe"
+- "EVA foam" → Say "Foam sheets for [character]'s armor pieces" 
+- "Craft supplies" → Say "Paint for [character]'s orange details"
+- "Accessories" → Say exactly which: "headband", "belt", "necklace"
+- "Sewing machine" → NEVER list tools, only costume pieces
+- "Generic wig" → Say "[Color] wig in [character]'s [style]"
 
 **REQUIRED FORMAT:**
 
-**DIY BUILD** (7 items) - Repurpose household items into THIS CHARACTER'S costume:
-- Use SPECIFIC repurposed items (e.g., "black hoodie cut into robe" not "fabric")
-- Include SPECIFIC DIY techniques (e.g., "white bedsheet dyed for cape")
-- Reference THE CHARACTER'S colors and components
-- Example: "Black trash bag cut and taped into Gojo's robe shape"
+**DIY BUILD** (7 items) - Household items transformed into ${characterName}'s costume:
+- Each item = one costume component (shirt → robe, bedsheet → cape, etc.)
+- DESCRIBE the transformation: "black hoodie cut and sewn into [character]'s robe"
+- REFERENCE character details: "white pillowcase for [character]'s collar"
+- Include character-specific colors and modifications
+- Example: "Yellow trash bag cut into bodysuit shape with duct tape seams for Saitama's suit"
+- NO tools or generic supplies - only transformed costume pieces
 
-**BUDGET BUILD** (6-7 items) - Ready-made items with exact names and prices:
-- Include EXACT product descriptions (e.g., "Black kimono robe ($35)" not "robe")
-- Add realistic prices ($10-$50)
-- Reference THE CHARACTER'S specific items
-- Example: "Pre-made black blindfold for Gojo ($12)"
+**BUDGET BUILD** (7 items) - Ready-made items with prices ($12-$50 each):
+- Each item = specific costume piece you can buy
+- FORMAT: "[Specific product description for character] ($XX)"
+- Examples: "Black kimono-style robe for Gojo ($38)", "Orange ninja headband with metal plate for Naruto ($14)"
+- Include ALL major costume components (clothing, wig, accessories, props)
+- Prices realistic for online costume retailers
+- NO generic items - every item tied to ${characterName}
 
-**PREMIUM BUILD** (6-7 items) - Professional materials with exact names and prices:
-- Include EXACT premium descriptions with character details
-- Add realistic prices ($50-$300)
-- Reference THE CHARACTER'S unique features
-- Example: "Custom Gojo robe with white collar detail ($180)"
+**PREMIUM BUILD** (7 items) - Professional quality with prices ($60-$280 each):
+- Each item = custom/high-end version of costume component  
+- FORMAT: "[Detailed professional description for character] ($XXX)"
+- Examples: "Custom-tailored black Gojo robe with white collar detail ($180)", "Professional silicone muscle suit for Saitama ($195)"
+- Include material upgrades: "heat-resistant wig", "real leather", "3D printed"
+- Higher accuracy and durability than budget
+- NO generic items - every item references ${characterName}'s design
 
 **CRITICAL EXAMPLES:**
 
@@ -185,27 +243,31 @@ Return ONLY valid JSON:
 
 Generate for ${characterName} ONLY. Every item must reference this specific character's costume.`
 
-    const userPrompt = `Generate character-specific cosplay build tiers for: ${characterName}
+    const userPrompt = `Generate realistic, character-specific cosplay build tiers for: **${characterName}**
 
-CRITICAL REQUIREMENTS:
-1. First identify ${characterName}'s key costume components (colors, accessories, distinctive features)
-2. Generate 7 items per tier that ONLY reference those specific components
-3. NO generic phrases - every item must be character-specific
-4. DIY tier: Repurposed household items transformed into ${characterName}'s costume pieces
-5. BUDGET tier: Ready-made items with exact product names and prices ($10-$50)
-6. PREMIUM tier: Professional materials with exact descriptions and prices ($50-$300)
+${context ? `\nUSE THIS CONTEXT: \"${context}\"\n` : ''}
 
-Examples of GOOD items:
-- "Black hoodie cut into Gojo's robe with white collar"
-- "Teal twin-tail wig styled for Miku ($35)"
-- "Yellow trash bag bodysuit for Saitama"
+**YOUR TASK:**
+1. Identify ${characterName}'s 6-8 key costume components from the context (or your knowledge)
+2. For EACH of the 3 tiers (DIY, BUDGET, PREMIUM), create 7 items
+3. EVERY item must be a specific costume piece for ${characterName}
+4. Include exact colors, styles, and details from ${characterName}'s design
 
-Examples of BAD items (NEVER USE):
-- "Basic fabric from thrift stores"
-- "EVA foam accessories"
-- "Generic costume supplies"
+**QUALITY CHECKS:**
+✅ GOOD: "Black kimono-style robe with white collar for Gojo ($38)"
+✅ GOOD: "Yellow trash bag cut into bodysuit with black marker details for Saitama"
+✅ GOOD: "Teal twin-tail wig styled for Hatsune Miku ($35)"
+❌ BAD: "Basic fabric from thrift stores" (too generic)
+❌ BAD: "EVA foam" (doesn't mention character)
+❌ BAD: "Sewing machine" (tool, not costume piece)
 
-Output ONLY JSON with character-specific build tiers. NO additional text.`
+**FORMAT:**
+Return ONLY valid JSON (no markdown, no explanations):
+{
+  "diy": ["item 1 for ${characterName}", "item 2 for ${characterName}", ... 7 items],
+  "budget": ["item 1 for ${characterName} ($XX)", "item 2 for ${characterName} ($XX)", ... 7 items],
+  "premium": ["item 1 for ${characterName} ($XXX)", "item 2 for ${characterName} ($XXX)", ... 7 items]
+}`
 
     const response = await fetch(`${API_URL}/chat/completions`, {
       method: 'POST',
@@ -219,8 +281,9 @@ Output ONLY JSON with character-specific build tiers. NO additional text.`
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
-        temperature: 0.7,
-        max_tokens: 3000
+        temperature: 0.8,
+        max_tokens: 3500,
+        top_p: 0.9
       })
     })
 
@@ -266,33 +329,130 @@ Output ONLY JSON with character-specific build tiers. NO additional text.`
 }
 
 function getDefaultTiers(characterName) {
+  console.warn(`Using fallback tiers for ${characterName} - API generation failed`)
+  
+  // Basic character-aware fallback
   return {
     diy: [
-      'Basic fabric from thrift stores',
-      'DIY EVA foam build from YouTube tutorials',
-      'Hand-painted details and weathering',
-      'Second-hand accessories and props',
-      'Home sewing with standard thread',
-      'Improvised construction tools',
-      'Recycled cardboard for armor pieces'
+      `Thrift store clothing modified for ${characterName}'s base outfit`,
+      `Cardboard and craft foam for ${characterName}'s props/accessories`,
+      `Fabric paint for ${characterName}'s specific colors and patterns`,
+      `Wig styled from budget store with styling products`,
+      `Old belts and accessories repurposed for character details`,
+      `Printed reference images for accuracy`,
+      `Hot glue and basic sewing supplies for assembly`
     ],
     budget: [
-      'Budget cosplay suppliers online',
-      'Pre-cut foam blanks ($20-30)',
-      'Spray paint from hardware store',
-      'Mid-tier fabric ($5-8/yard)',
-      'Basic sewing machine usage',
-      'Ready-made wig from Amazon',
-      'Found/borrowed construction tools'
+      `${characterName} costume set from online retailers ($40-60)`,
+      `Matching wig in character style ($25-35)`,
+      `Character-specific accessories bundle ($15-25)`,
+      `Fabric for custom modifications ($20-30)`,
+      `Cosplay-grade makeup and face paint ($15-20)`,
+      `Props from costume suppliers ($20-40)`,
+      `Shoes/boots modified to match ($30-50)`
     ],
     premium: [
-      'Professional grade EVA foam (25kg blocks)',
-      'Metallic and specialty paints',
-      'High-quality imported fabrics',
-      'Custom 3D printing for accessories',
-      'Professional seamstress consultation',
-      'Commissioned styled wig',
-      'Advanced weathering and detailing materials'
+      `Custom-tailored ${characterName} costume with accurate fabrics ($180-250)`,
+      `Professional heat-resistant wig styled by expert ($120-180)`,
+      `Commissioned props with accurate details ($80-150)`,
+      `Premium fabric upgrades and embellishments ($60-100)`,
+      `Professional makeup and contact lenses ($50-80)`,
+      `Custom accessories crafted by prop makers ($70-120)`,
+      `Designer boots/shoes matching character ($90-140)`
     ]
+  }
+}
+
+/**
+ * Generate a detailed image prompt for cosplay visualization
+ * @param {string} characterName - The character being cosplayed
+ * @param {string} tier - The build tier (diy, budget, or premium)
+ * @param {Array<string>} selectedItems - Array of selected cart items
+ * @param {string} gender - Gender of the cosplayer (male or female)
+ * @returns {Promise<string>} - Detailed image generation prompt
+ */
+export async function generateCosplayImagePrompt(characterName, tier, selectedItems, gender = 'male') {
+  console.log('=== GENERATING COSPLAY IMAGE PROMPT ===')
+  console.log('Character:', characterName)
+  console.log('Tier:', tier)
+  console.log('Gender:', gender)
+  console.log('Selected items:', selectedItems.length)
+
+  if (!API_KEY || !API_URL) {
+    console.error('❌ Missing API credentials')
+    throw new Error('API credentials not configured')
+  }
+
+  try {
+    const systemPrompt = `You are an expert cosplay photographer and costume designer. Your task is to create detailed, professional image generation prompts for AI image generators (like DALL-E or Stable Diffusion).
+
+CRITICAL RULES:
+1. The cosplayer must be a REAL PERSON (not the fictional character)
+2. They are WEARING a cosplay of the character
+3. Describe a realistic person in costume, not the actual character
+4. Focus on the costume details and how they look on a real person
+5. Include photography terms for realism
+
+Your prompts should create photorealistic images of cosplayers at conventions or photo shoots.`
+
+    const itemsList = selectedItems.length > 0 ? selectedItems.join(', ') : 'various costume pieces'
+
+    const userPrompt = `Create a detailed image generation prompt for a ${tier.toUpperCase()} tier cosplay of ${characterName}.
+
+**Cosplayer Gender: ${gender.toUpperCase()}**
+
+**Selected costume items:**
+${itemsList}
+
+**Requirements:**
+1. Start with "Professional cosplay photography of a ${gender} cosplayer wearing..."
+2. Describe what a REAL ${gender.toUpperCase()} COSPLAYER looks like wearing this ${characterName} costume
+3. Mention the specific items from the list in the costume description
+4. Include the ${tier} quality level (DIY = handmade/crafted, Budget = store-bought, Premium = professional/custom-made)
+5. Add photography details: lighting, setting, camera angle
+6. Describe realistic fabric textures, materials, and craftsmanship appropriate for a ${gender} cosplayer
+7. Keep it under 400 words but highly detailed
+8. DO NOT say "a person cosplaying as [character]" - instead describe the costume components on a real ${gender} person
+
+**Example structure:**
+"Professional cosplay photography of a ${gender} cosplayer wearing a [quality] handcrafted ${characterName} costume. The cosplayer wears [describe each costume piece from the list]. [Describe materials, colors, textures]. [Camera details: lighting, setting, angle]. High resolution, detailed cosplay craftsmanship, [photography style]."
+
+Generate the image prompt now:`
+
+    const response = await fetch(`${API_URL}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${API_KEY}`
+      },
+      body: JSON.stringify({
+        model: TEXT_MODEL,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        temperature: 0.8,
+        max_tokens: 500
+      })
+    })
+
+    console.log('API Response status:', response.status)
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('❌ Groq API Error:', response.status, errorText)
+      throw new Error(`Prompt generation failed: ${response.status}`)
+    }
+
+    const data = await response.json()
+    const prompt = data.choices[0].message.content.trim()
+    
+    console.log('✅ Image prompt generated successfully')
+    console.log('Prompt preview:', prompt.substring(0, 150) + '...')
+    
+    return prompt
+  } catch (error) {
+    console.error('❌ Prompt generation error:', error)
+    throw error
   }
 }

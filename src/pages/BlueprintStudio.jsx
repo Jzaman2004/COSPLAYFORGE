@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { Zap, Loader, Sun, Moon } from 'lucide-react'
 import K2Simulator from '../components/K2Simulator'
-import { generateCosplayTiers } from '../services/llamaService'
+import { generateCosplayTiers, generateCharacterProfile } from '../services/llamaService'
 
 export default function BlueprintStudio() {
   const navigate = useNavigate()
@@ -44,30 +44,48 @@ export default function BlueprintStudio() {
           setShowK2(true)
 
           let context = parsed.description || ''
+          let bioToDisplay = parsed.description || ''
 
           // If we have an uploaded image, generate a fresh detailed description for better tiers
           if (parsed.uploadedImage) {
             console.log("Generating fresh description from image for context...")
             try {
-              // We need to import this function first! 
-              // (I'll add the import in a separate edit or verify it exists)
-              // Actually, I can just use the import from above if I add it to the import list.
               const { generateImageDescription } = await import('../services/llamaService')
               const detailedDesc = await generateImageDescription(parsed.uploadedImage)
 
               if (detailedDesc) {
                 console.log("Generated detailed context:", detailedDesc)
                 context = detailedDesc
-                setCharacterBio(detailedDesc) // Update UI with the better description
+                bioToDisplay = detailedDesc
               }
             } catch (err) {
               console.error("Failed to generate image description:", err)
-              // Fallback to existing bio
-              setCharacterBio(parsed.description || '')
+            }
+          }
+
+          // If no description available or it's too generic, generate a fresh character profile
+          if (!context || context.includes('ideal for cosplay') || context.includes('Unable to generate') || context.includes('Error generating') || context.length < 50) {
+            console.log("🔄 Description missing or generic, generating fresh character profile for:", charName)
+            try {
+              const freshProfile = await generateCharacterProfile(charName)
+              console.log("📝 Fresh profile received:", freshProfile.substring(0, 100) + "...")
+              
+              // Check if the profile is valid (not an error message)
+              if (freshProfile && !freshProfile.includes('Error generating') && !freshProfile.includes('API credentials not configured')) {
+                context = freshProfile
+                bioToDisplay = freshProfile
+                console.log("✅ Using fresh profile as context")
+              } else {
+                console.warn("⚠️ Profile generation had issues:", freshProfile)
+              }
+            } catch (err) {
+              console.error("❌ Failed to generate character profile:", err)
             }
           } else {
-            setCharacterBio(parsed.description || '')
+            console.log("✅ Using existing description from session")
           }
+
+          setCharacterBio(bioToDisplay)
 
           const tiersData = await generateCosplayTiers(charName, context)
           setTiers(tiersData)

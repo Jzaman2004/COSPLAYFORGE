@@ -1,4 +1,4 @@
-import { ShoppingCart, Zap as SolanaIcon, Download, TrendingDown, Lock, Check, X, CreditCard, ShieldCheck, MapPin, Truck, ChevronRight, Edit2 } from 'lucide-react'
+import { ShoppingCart, Zap as SolanaIcon, Download, TrendingDown, TrendingUp, Lock, Check, X, CreditCard, ShieldCheck, MapPin, Truck, ChevronRight, Edit2, Loader, RefreshCw, Clock, Shield, Sparkles, AlertTriangle, Activity } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { solanaNft, flowgladLock, figmaExport, snowflakeInsight } from '../simulation/sponsorMocks'
 import { useNavigate } from 'react-router-dom'
@@ -25,8 +25,14 @@ export default function Checkout() {
   const navigate = useNavigate()
   const [isProcessing, setIsProcessing] = useState(false)
   const [nftMinted, setNftMinted] = useState(false)
+  const [orderId, setOrderId] = useState('') // Static order ID
   const [cartData, setCartData] = useState(null)
   const [currentStep, setCurrentStep] = useState(1) // 1: Shipping, 2: Payment
+
+  // Image Generation State
+  const [cosplayImage, setCosplayImage] = useState(null)
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false)
+  const [imageError, setImageError] = useState(null)
 
   // Checkout State
   const [shippingInfo, setShippingInfo] = useState({
@@ -48,10 +54,21 @@ export default function Checkout() {
   const [taxAmount, setTaxAmount] = useState(0)
   const [formErrors, setFormErrors] = useState({})
 
+  // Sponsor Integration State
+  const [isPriceLocked, setIsPriceLocked] = useState(false)
+  const [lockCountdown, setLockCountdown] = useState(14 * 60 + 23) // seconds
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const [priceChanges, setPriceChanges] = useState({}) // Track price changes per item
+
   useEffect(() => {
+    console.log('🔵 Checkout page mounted')
+    
     // Check auth
     const isAuthenticated = sessionStorage.getItem('isAuthenticated')
+    console.log('Auth status:', isAuthenticated)
+    
     if (!isAuthenticated) {
+      console.log('❌ Not authenticated, redirecting to auth')
       navigate('/auth')
       return
     }
@@ -60,9 +77,22 @@ export default function Checkout() {
 
     // Load cart data
     const cart = sessionStorage.getItem('cart')
+    console.log('📦 Raw cart from sessionStorage:', cart)
+    
     if (cart) {
-      const parsedCart = JSON.parse(cart)
-      setCartData(parsedCart)
+      try {
+        const parsedCart = JSON.parse(cart)
+        console.log('✅ Parsed cart data:', parsedCart)
+        console.log('  - Character:', parsedCart.characterName)
+        console.log('  - Tier:', parsedCart.tier)
+        console.log('  - Items:', parsedCart.items)
+        console.log('  - Total:', parsedCart.total)
+        setCartData(parsedCart)
+      } catch (error) {
+        console.error('❌ Failed to parse cart data:', error)
+      }
+    } else {
+      console.warn('⚠️ No cart data found in sessionStorage')
     }
   }, [navigate])
 
@@ -75,6 +105,96 @@ export default function Checkout() {
       setTaxAmount(0)
     }
   }, [shippingInfo.state, cartData])
+
+  // Generate cosplay preview image when cart data is available or changes
+  useEffect(() => {
+    console.log('🔍 [Checkout] Image loading effect triggered')
+    console.log('  - Cart data exists:', !!cartData)
+    console.log('  - Has generatedImage:', !!cartData?.generatedImage)
+    
+    if (!cartData) {
+      console.log('⚠️ [Checkout] No cart data available')
+      return
+    }
+    
+    // Check if we have a pre-generated image from TryOnLab
+    if (cartData.generatedImage) {
+      console.log('✅ [Checkout] Using pre-generated image from Simulation Lab')
+      console.log('  - Image data length:', cartData.generatedImage.length)
+      console.log('  - Gender used:', cartData.gender)
+      setCosplayImage(cartData.generatedImage)
+      setIsGeneratingImage(false)
+      return
+    }
+    
+    // If no pre-generated image, show message (shouldn't happen normally)
+    console.log('⚠️ [Checkout] No pre-generated image found - user may have skipped TryOnLab')
+    setImageError('No preview image available')
+    setIsGeneratingImage(false)
+  }, [cartData])
+
+  // Countdown timer for price lock
+  useEffect(() => {
+    if (isPriceLocked && lockCountdown > 0) {
+      const timer = setInterval(() => {
+        setLockCountdown(prev => prev - 1)
+      }, 1000)
+      return () => clearInterval(timer)
+    }
+  }, [isPriceLocked, lockCountdown])
+
+  // Generate mock price changes for items
+  useEffect(() => {
+    if (cartData?.items && Object.keys(priceChanges).length === 0) {
+      const changes = {}
+      cartData.items.forEach((item, idx) => {
+        // Random price change between -35% and +20%
+        const changePercent = (Math.random() * 55 - 35).toFixed(1)
+        changes[idx] = {
+          percent: changePercent,
+          trend: Array.from({ length: 10 }, () => Math.random() * 50 + 25) // Sparkline data
+        }
+      })
+      setPriceChanges(changes)
+    }
+  }, [cartData?.items])
+
+  const handleRefreshPrices = () => {
+    setIsRefreshing(true)
+    // Regenerate price changes with new random values
+    const changes = {}
+    cartData?.items?.forEach((item, idx) => {
+      const changePercent = (Math.random() * 55 - 35).toFixed(1)
+      changes[idx] = {
+        percent: changePercent,
+        trend: Array.from({ length: 10 }, () => Math.random() * 50 + 25)
+      }
+    })
+    setPriceChanges(changes)
+    setTimeout(() => setIsRefreshing(false), 1500)
+  }
+
+  const handleActivatePriceLock = () => {
+    setIsPriceLocked(true)
+    setLockCountdown(14 * 60 + 23) // Reset to 14:23
+  }
+
+  const formatCountdown = (seconds) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins}:${secs.toString().padStart(2, '0')}`
+  }
+
+  const calculatePotentialSavings = () => {
+    if (!cartData?.items) return 0
+    return cartData.items.reduce((sum, item, idx) => {
+      const change = priceChanges[idx]
+      if (change && parseFloat(change.percent) < 0) {
+        return sum + (item.price * Math.abs(parseFloat(change.percent)) / 100)
+      }
+      return sum
+    }, 0)
+  }
 
   const validateShipping = () => {
     const errors = {}
@@ -108,6 +228,9 @@ export default function Checkout() {
 
   const handleCheckout = () => {
     setIsProcessing(true)
+    // Generate order ID once when checkout is confirmed
+    const newOrderId = Math.random().toString(36).substr(2, 9).toUpperCase()
+    setOrderId(newOrderId)
     setTimeout(() => {
       setNftMinted(true)
       setIsProcessing(false)
@@ -300,7 +423,7 @@ export default function Checkout() {
                   <div className="mt-8 flex justify-end">
                     <button
                       onClick={handleNextStep}
-                      className="bg-neon-cyan/10 hover:bg-neon-cyan/20 border border-neon-cyan text-neon-cyan font-bold py-3 px-8 rounded transition flex items-center gap-2 group"
+                      className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-bold py-3 px-8 rounded shadow-[0_0_25px_rgba(16,185,129,0.5)] transition transform hover:scale-[1.02] flex items-center gap-2 group"
                     >
                       PROCEED_TO_PAYMENT <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition" />
                     </button>
@@ -408,7 +531,7 @@ export default function Checkout() {
                     <button
                       onClick={handleCheckout}
                       disabled={isProcessing}
-                      className="bg-gradient-to-r from-neon-purple to-neon-cyan hover:from-neon-purple/80 hover:to-neon-cyan/80 text-white font-bold py-3 px-8 rounded shadow-[0_0_20px_rgba(139,92,246,0.3)] transition transform hover:scale-[1.02] flex items-center gap-2 group relative overflow-hidden"
+                      className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-bold py-3 px-8 rounded shadow-[0_0_25px_rgba(16,185,129,0.5)] transition transform hover:scale-[1.02] flex items-center gap-2 group relative overflow-hidden"
                     >
                       {isProcessing ? (
                         <span className="flex items-center gap-2 font-mono text-sm">
@@ -443,7 +566,7 @@ export default function Checkout() {
                   <div className="bg-black/40 rounded p-4 max-w-md mx-auto mb-8 border border-slate-800 text-left">
                     <div className="flex justify-between text-xs font-mono text-slate-500 mb-2">
                       <span>ORDER_ID:</span>
-                      <span className="text-white">#{Math.random().toString(36).substr(2, 9).toUpperCase()}</span>
+                      <span className="text-white">#{orderId}</span>
                     </div>
                     <div className="flex justify-between text-xs font-mono text-slate-500 mb-2">
                       <span>SHIPPED_TO:</span>
@@ -462,30 +585,283 @@ export default function Checkout() {
               )}
             </AnimatePresence>
 
-            {/* Sponsor Integrations (Kept below for context) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
-              {/* Snowflake */}
-              <div className="glass-panel p-4 rounded-lg border border-slate-800 opacity-60 hover:opacity-100 transition">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-[10px] bg-blue-900/50 text-blue-300 border border-blue-500/30 px-1.5 py-0.5 rounded font-mono">SNOWFLAKE</span>
-                  <span className="text-xs font-bold text-slate-300">MARKET_ANALYSIS</span>
+            {/* Enhanced Sponsor Integrations - Trading Terminal Style */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-6">
+              
+              {/* SNOWFLAKE MARKET INTELLIGENCE */}
+              <div className="glass-panel rounded-xl border border-cyan-500/40 overflow-hidden relative group hover:border-cyan-400/60 transition-all duration-300">
+                {/* Animated wave background */}
+                <div className="absolute inset-0 opacity-10">
+                  <div className="absolute inset-0 bg-gradient-to-br from-cyan-500 via-blue-500 to-cyan-600 animate-pulse"></div>
+                  <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                      <pattern id="wave" x="0" y="0" width="100" height="20" patternUnits="userSpaceOnUse">
+                        <path d="M0 10 Q 25 0, 50 10 T 100 10" fill="none" stroke="currentColor" strokeWidth="1" className="text-cyan-400"/>
+                      </pattern>
+                    </defs>
+                    <rect width="100%" height="100%" fill="url(#wave)" />
+                  </svg>
                 </div>
-                <p className="text-[10px] text-slate-400 leading-relaxed italic">
-                  "{snowflakeInsight.insight}"
-                </p>
+
+                <div className="relative z-10 p-5">
+                  {/* Header */}
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-cyan-400 animate-pulse" />
+                      <span className="text-xs font-bold text-cyan-300 tracking-wider">SNOWFLAKE MARKET INTELLIGENCE</span>
+                    </div>
+                    <button 
+                      onClick={handleRefreshPrices}
+                      disabled={isRefreshing}
+                      className="text-cyan-400 hover:text-cyan-300 transition-colors"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+                    </button>
+                  </div>
+
+                  {/* Hot Insight Box */}
+                  <div className="bg-gradient-to-r from-orange-500/20 to-red-500/20 border border-orange-500/40 rounded-lg p-3 mb-4">
+                    <div className="flex items-start gap-2">
+                      <div className="mt-0.5">
+                        <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+                      </div>
+                      <div className="flex-1">
+                        <div className="text-[10px] font-mono text-orange-400 mb-1 font-bold">🔥 HOT INSIGHT</div>
+                        <p className="text-xs text-slate-200 leading-relaxed">
+                          EVA foam <TrendingDown className="inline w-3 h-3 text-green-400" /> <span className="text-green-400 font-bold">28%</span> after factory expansion
+                        </p>
+                        <p className="text-[9px] text-orange-300/80 mt-1 font-mono">
+                          💡 LOCK NOW before convention season demand surge
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Item Price Trends */}
+                  <div className="space-y-2 mb-4">
+                    {cartData?.items?.slice(0, 3).map((item, idx) => {
+                      const change = priceChanges[idx]
+                      if (!change) return null
+                      const isDecrease = parseFloat(change.percent) < 0
+                      
+                      return (
+                        <div key={idx} className="bg-black/40 rounded-lg p-2.5 border border-cyan-900/50 hover:border-cyan-700/50 transition-colors">
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className="text-xs text-slate-200 truncate flex-1 mr-2">{item.name}</span>
+                            <div className="flex items-center gap-1">
+                              {isDecrease ? (
+                                <TrendingDown className="w-3 h-3 text-green-400" />
+                              ) : (
+                                <TrendingUp className="w-3 h-3 text-red-400" />
+                              )}
+                              <span className={`text-xs font-mono font-bold ${isDecrease ? 'text-green-400' : 'text-red-400'}`}>
+                                {isDecrease ? '' : '+'}{change.percent}%
+                              </span>
+                            </div>
+                          </div>
+                          {/* Sparkline Chart */}
+                          <svg className="w-full h-6" viewBox="0 0 100 20">
+                            <polyline
+                              points={change.trend.map((val, i) => `${i * 11},${20 - (val / 100 * 15)}`).join(' ')}
+                              fill="none"
+                              stroke={isDecrease ? '#4ade80' : '#f87171'}
+                              strokeWidth="1.5"
+                              className="opacity-70"
+                            />
+                          </svg>
+                          <div className="text-[8px] text-slate-500 mt-1 font-mono">Last 90 days</div>
+                        </div>
+                      )
+                    })}
+                  </div>
+
+                  {/* Data Sources & Latency */}
+                  <div className="flex items-center justify-between pt-3 border-t border-cyan-900/30">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-[8px] bg-cyan-900/40 text-cyan-300 px-1.5 py-0.5 rounded font-mono">Michaels</span>
+                      <span className="text-[8px] bg-cyan-900/40 text-cyan-300 px-1.5 py-0.5 rounded font-mono">Etsy</span>
+                      <span className="text-[8px] bg-cyan-900/40 text-cyan-300 px-1.5 py-0.5 rounded font-mono">Amazon</span>
+                    </div>
+                    <span className="text-[9px] text-cyan-400 font-mono font-bold">47ms</span>
+                  </div>
+                </div>
               </div>
 
-              {/* FlowGlad */}
-              <div className="glass-panel p-4 rounded-lg border border-slate-800 opacity-60 hover:opacity-100 transition">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-[10px] bg-green-900/50 text-green-300 border border-green-500/30 px-1.5 py-0.5 rounded font-mono">FLOWGLAD</span>
-                  <span className="text-xs font-bold text-slate-300">PRICE_LOCK</span>
-                </div>
-                <div className="flex justify-between items-center text-[10px] text-slate-500 font-mono">
-                  <span>LOCKED_RATE: <span className="text-green-400">{flowgladLock.lockedPrice}</span></span>
-                  <span>{flowgladLock.timer}</span>
+              {/* FLOWGLAD PRICE SHIELD */}
+              <div className={`glass-panel rounded-xl border-2 overflow-hidden relative transition-all duration-500 ${
+                isPriceLocked 
+                  ? 'border-blue-500/60 shadow-[0_0_30px_rgba(59,130,246,0.3)] animate-pulse' 
+                  : 'border-indigo-500/40 hover:border-indigo-400/60'
+              }`}>
+                {/* Glow effect when locked */}
+                {isPriceLocked && (
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-transparent to-indigo-500/10 animate-pulse"></div>
+                )}
+
+                <div className="relative z-10 p-5">
+                  {/* Header */}
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <Shield className={`w-4 h-4 ${isPriceLocked ? 'text-blue-400' : 'text-indigo-400'}`} />
+                      <span className="text-xs font-bold text-indigo-300 tracking-wider">FLOWGLAD PRICE SHIELD</span>
+                    </div>
+                    {isPriceLocked && (
+                      <div className="flex items-center gap-1.5 bg-blue-500/20 px-2 py-1 rounded border border-blue-500/40">
+                        <Clock className="w-3 h-3 text-blue-400 animate-pulse" />
+                        <span className="text-xs font-mono text-blue-300 font-bold">{formatCountdown(lockCountdown)}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Status Box */}
+                  <div className={`rounded-lg p-4 mb-4 border-2 ${
+                    isPriceLocked
+                      ? 'bg-gradient-to-br from-blue-900/40 to-blue-800/30 border-blue-500/50'
+                      : 'bg-gradient-to-br from-indigo-900/40 to-purple-900/30 border-indigo-500/40'
+                  }`}>
+                    <div className="text-center">
+                      {isPriceLocked && (
+                        <div className="flex items-center justify-center gap-2 mb-2">
+                          <Lock className="w-5 h-5 text-blue-400" />
+                          <span className="text-sm font-bold text-blue-300 tracking-wider">PRICES SECURED</span>
+                        </div>
+                      )}
+                      <div className="text-xs text-slate-400 mb-2 font-mono">
+                        {isPriceLocked ? 'Total Savings Locked' : 'Potential Savings'}
+                      </div>
+                      <div className={`text-2xl font-mono font-bold mb-3 ${isPriceLocked ? 'text-green-400' : 'text-indigo-300'}`}>
+                        ${calculatePotentialSavings().toFixed(2)}
+                      </div>
+                      <button
+                        onClick={handleActivatePriceLock}
+                        disabled={isPriceLocked}
+                        className={`w-full font-bold py-2.5 px-4 rounded shadow-lg transition flex items-center justify-center gap-2 ${
+                          isPriceLocked
+                            ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white cursor-not-allowed opacity-90'
+                            : 'bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white transform hover:scale-[1.02]'
+                        }`}
+                      >
+                        {isPriceLocked ? (
+                          <>
+                            <Lock className="w-4 h-4" />
+                            <span className="text-xs tracking-wider">PRICE SHIELD ACTIVE • Secured ${calculatePotentialSavings().toFixed(2)}</span>
+                          </>
+                        ) : (
+                          <>
+                            <Shield className="w-4 h-4" />
+                            <span className="text-xs tracking-wider">ACTIVATE PRICE SHIELD • Save ${calculatePotentialSavings().toFixed(2)}</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Locked Items Preview */}
+                  {isPriceLocked && (
+                    <div className="space-y-2 mb-4">
+                      {cartData?.items?.slice(0, 3).map((item, idx) => {
+                        const change = priceChanges[idx]
+                        if (!change || parseFloat(change.percent) >= 0) return null
+                        const savings = item.price * Math.abs(parseFloat(change.percent)) / 100
+                        const lockedPrice = item.price - savings
+                        
+                        return (
+                          <div key={idx} className="bg-blue-900/20 rounded-lg p-2 border border-blue-800/40">
+                            <div className="text-xs text-slate-200 mb-1 truncate">{item.name}</div>
+                            <div className="flex items-center gap-2 text-[10px] font-mono">
+                              <span className="text-slate-500 line-through">${item.price.toFixed(2)}</span>
+                              <span className="text-green-400 font-bold">${lockedPrice.toFixed(2)}</span>
+                              <span className="text-green-400">(-${savings.toFixed(2)})</span>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+
+                  {/* Protection Stats & Historical Data */}
+                  <div className="mb-4 space-y-2">
+                    {/* Active Protection Badge */}
+                    {isPriceLocked && (
+                      <div className="bg-gradient-to-r from-blue-900/30 to-indigo-900/30 border border-blue-500/30 rounded-lg p-2.5">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                          <span className="text-[10px] text-green-400 font-mono font-bold">PROTECTION ACTIVE</span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 text-center">
+                          <div>
+                            <div className="text-xs font-mono font-bold text-blue-300">{cartData?.items?.length || 0}</div>
+                            <div className="text-[8px] text-slate-500 font-mono">Items</div>
+                          </div>
+                          <div>
+                            <div className="text-xs font-mono font-bold text-green-400">{Math.floor(calculatePotentialSavings() / (cartData?.total || 1) * 100)}%</div>
+                            <div className="text-[8px] text-slate-500 font-mono">Saved</div>
+                          </div>
+                          <div>
+                            <div className="text-xs font-mono font-bold text-indigo-300">{lockCountdown}s</div>
+                            <div className="text-[8px] text-slate-500 font-mono">Remaining</div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Historical Performance */}
+                    <div className="bg-black/30 rounded-lg p-2.5 border border-indigo-900/40">
+                      <div className="text-[10px] text-indigo-300 font-mono font-bold mb-2">📊 HISTORICAL PERFORMANCE</div>
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[9px] text-slate-400 font-mono">Avg. savings/order</span>
+                          <span className="text-[9px] text-green-400 font-mono font-bold">$47.83</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[9px] text-slate-400 font-mono">Peak save rate</span>
+                          <span className="text-[9px] text-green-400 font-mono font-bold">31.4%</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[9px] text-slate-400 font-mono">Protected users</span>
+                          <span className="text-[9px] text-blue-400 font-mono font-bold">18,247</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Real-time Market Activity */}
+                    {!isPriceLocked && (
+                      <div className="bg-gradient-to-br from-purple-900/20 to-indigo-900/20 rounded-lg p-2.5 border border-purple-700/40">
+                        <div className="flex items-center gap-1.5 mb-2">
+                          <Activity className="w-3 h-3 text-purple-400 animate-pulse" />
+                          <span className="text-[10px] text-purple-300 font-mono font-bold">LIVE MARKET ACTIVITY</span>
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-1.5 text-[9px]">
+                            <div className="w-1 h-1 bg-red-500 rounded-full animate-pulse"></div>
+                            <span className="text-slate-400 font-mono">3 suppliers raised prices in last 5min</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-[9px]">
+                            <div className="w-1 h-1 bg-green-500 rounded-full animate-pulse"></div>
+                            <span className="text-slate-400 font-mono">12 active price locks by other users</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Footer Info */}
+                  <div className="space-y-2 pt-3 border-t border-indigo-900/30">
+                    <div className="flex items-center justify-between text-[9px] text-slate-400 font-mono">
+                      <span>🛡️ 200+ craft suppliers monitored</span>
+                    </div>
+                    {!isPriceLocked && (
+                      <div className="flex items-start gap-1.5 bg-yellow-900/20 border border-yellow-700/40 rounded p-2">
+                        <AlertTriangle className="w-3 h-3 text-yellow-400 mt-0.5 flex-shrink-0" />
+                        <span className="text-[9px] text-yellow-300 font-mono">
+                          Prices update every 90 seconds when unlocked
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
+
             </div>
 
           </div>
@@ -497,8 +873,56 @@ export default function Checkout() {
             <div className="glass-panel p-6 rounded-xl border border-neon-purple/30 sticky top-8">
               <h3 className="text-sm font-display font-bold text-white mb-4 tracking-wider border-b border-white/10 pb-2">ORDER_DETAILS</h3>
 
+              {/* AI Generated Cosplay Preview Image */}
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-[10px] font-mono text-slate-400 uppercase">AI Preview</p>
+                </div>
+                <div className="rounded-lg overflow-hidden border border-slate-700 bg-black/40">
+                  {isGeneratingImage ? (
+                    <div className="aspect-square flex flex-col items-center justify-center bg-gradient-to-br from-purple-900/20 to-cyan-900/20">
+                      <Loader className="w-8 h-8 text-neon-cyan animate-spin mb-3" />
+                      <p className="text-xs font-mono text-slate-400">GENERATING_PREVIEW...</p>
+                      <p className="text-[9px] font-mono text-slate-500 mt-1">This may take 10-30s</p>
+                    </div>
+                  ) : cosplayImage ? (
+                    <div className="relative group">
+                      <img 
+                        src={cosplayImage} 
+                        alt="AI Generated Cosplay Preview" 
+                        className="w-full aspect-square object-cover"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="absolute bottom-2 left-2 right-2">
+                          <p className="text-[10px] font-mono text-white/90">
+                            AI GENERATED PREVIEW
+                          </p>
+                          <p className="text-[10px] font-mono text-slate-400">
+                            {cartData?.characterName} - {cartData?.tier?.toUpperCase()} TIER
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : imageError ? (
+                    <div className="aspect-square flex flex-col items-center justify-center bg-red-900/10 border border-red-500/20 p-4">
+                      <X className="w-8 h-8 text-red-400 mb-2" />
+                      <p className="text-xs font-mono text-red-400 text-center">
+                        IMAGE_GENERATION_FAILED
+                      </p>
+                      <p className="text-[9px] font-mono text-red-300 text-center mt-1">
+                        {imageError}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="aspect-square flex flex-col items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800">
+                      <p className="text-xs font-mono text-slate-500">AWAITING_DATA...</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
               {/* Cart Items Preview (Collapsed) */}
-              <div className="mb-4 space-y-2 max-h-40 overflow-y-auto custom-scrollbar pr-2">
+              <div className="mb-4 space-y-2 max-h-40 overflow-hidden pr-2">
                 {cartData?.items?.map((item, idx) => (
                   <div key={idx} className="flex justify-between items-center text-xs text-slate-400">
                     <span className="truncate max-w-[150px]">{item.name}</span>
@@ -533,17 +957,53 @@ export default function Checkout() {
                 </div>
               </div>
 
-              {/* Solana / Figma Badges */}
-              <div className="flex gap-2 mt-4">
-                <div className="flex-1 bg-indigo-900/20 border border-indigo-500/30 rounded p-2 text-center">
-                  <span className="text-[10px] text-indigo-300 font-mono flex items-center justify-center gap-1">
-                    <SolanaIcon className="w-3 h-3" /> NFT_CERT
-                  </span>
+              {/* Solana / Figma Action Buttons */}
+              <div className="grid grid-cols-2 gap-4 mt-6">
+                {/* NFT Certificate Button */}
+                <div className="space-y-2">
+                  <div className="text-center">
+                    <span className="text-[10px] text-slate-200 font-mono tracking-wider font-semibold">POWERED BY SOLANA</span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      const blob = new Blob([''], { type: 'text/plain' })
+                      const link = document.createElement('a')
+                      link.href = URL.createObjectURL(blob)
+                      link.download = 'nft licencee.txt'
+                      link.click()
+                      URL.revokeObjectURL(link.href)
+                      console.log('💾 NFT license downloaded as nft licencee.txt')
+                    }}
+                    className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-3 px-4 rounded shadow-[0_0_15px_rgba(99,102,241,0.4)] transition transform hover:scale-[1.02] flex items-center justify-center gap-2"
+                  >
+                    <SolanaIcon className="w-4 h-4" />
+                    <span className="font-mono text-xs tracking-wider">NFT_CERT</span>
+                  </button>
                 </div>
-                <div className="flex-1 bg-purple-900/20 border border-purple-500/30 rounded p-2 text-center">
-                  <span className="text-[10px] text-purple-300 font-mono flex items-center justify-center gap-1">
-                    <Download className="w-3 h-3" /> FIGMA_DOC
-                  </span>
+
+                {/* Design File Download Button */}
+                <div className="space-y-2">
+                  <div className="text-center">
+                    <span className="text-[10px] text-slate-200 font-mono tracking-wider font-semibold">POWERED BY FIGMA</span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      if (cosplayImage) {
+                        const link = document.createElement('a')
+                        link.href = cosplayImage
+                        link.download = 'nfccosplay.png'
+                        link.click()
+                        console.log('💾 Image downloaded as nfccosplay.png')
+                      } else {
+                        console.warn('⚠️ No image available to download')
+                      }
+                    }}
+                    disabled={!cosplayImage || isGeneratingImage}
+                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold py-3 px-4 rounded shadow-[0_0_15px_rgba(168,85,247,0.4)] transition transform hover:scale-[1.02] flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span className="font-mono text-xs tracking-wider">DESIGN_FILE</span>
+                  </button>
                 </div>
               </div>
             </div>

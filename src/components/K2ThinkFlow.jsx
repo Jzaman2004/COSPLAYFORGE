@@ -44,7 +44,7 @@ export default function K2ThinkFlow() {
 
         <div
           ref={scrollContainerRef}
-          className="h-64 overflow-y-auto font-mono text-xs p-2 custom-scrollbar"
+          className="h-64 overflow-hidden font-mono text-xs p-2"
         >
           {k2Reasoning.steps.slice(0, visibleSteps).map((text, i) => (
             <div key={i} className="mb-0.5 flex gap-2">
