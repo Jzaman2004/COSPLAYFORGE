@@ -3,8 +3,9 @@ import './App.css'
 
 // Pages
 import CharacterScan from './pages/CharacterScan'
-import BlueprintStudio from './pages/BlueprintStudio'
+// BlueprintStudio removed
 import TryOnLab from './pages/TryOnLab'
+import AuthPage from './pages/AuthPage'
 import Checkout from './pages/Checkout'
 
 function App() {
@@ -23,8 +24,9 @@ function App() {
         <Routes>
           <Route path="/" element={<CharacterScan />} />
           <Route path="/character-scan" element={<CharacterScan />} />
-          <Route path="/blueprint" element={<BlueprintStudio />} />
+          {/* Blueprint route removed */}
           <Route path="/tryonlab" element={<TryOnLab />} />
+          <Route path="/auth" element={<AuthPage />} />
           <Route path="/checkout" element={<Checkout />} />
         </Routes>
 

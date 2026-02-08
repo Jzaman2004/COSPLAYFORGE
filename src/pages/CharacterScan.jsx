@@ -1,8 +1,10 @@
 import { useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
-import { motion } from 'framer-motion'
-import { Loader, Upload, Scan, Zap } from 'lucide-react'
-import { generateCharacterProfile, generateDALLEVisualization } from '../services/llamaService'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Loader, Upload, Scan, Zap, LogIn, LogOut, User } from 'lucide-react'
+import { generateCharacterProfile, generateCosplayTiers, generateDALLEVisualization } from '../services/llamaService'
+import K2ThinkFlow from '../components/K2ThinkFlow'
+import AnalysisResult from '../components/AnalysisResult'
 
 export default function CharacterScan() {
   const navigate = useNavigate()
@@ -11,11 +13,23 @@ export default function CharacterScan() {
   const [uploadedImage, setUploadedImage] = useState(null)
   const [uploadedFileName, setUploadedFileName] = useState('')
   const [selectedCharacter, setSelectedCharacter] = useState(null)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
 
-  // Force dark mode
+  // New State for Analysis Flow
+  const [analysisComplete, setAnalysisComplete] = useState(false)
+  const [analysisData, setAnalysisData] = useState(null)
+
+  // Force dark mode and check auth
   useEffect(() => {
     document.documentElement.classList.add('dark')
+    const auth = sessionStorage.getItem('isAuthenticated')
+    setIsAuthenticated(!!auth)
   }, [])
+
+  const handleLogout = () => {
+    sessionStorage.removeItem('isAuthenticated')
+    setIsAuthenticated(false)
+  }
 
   const formatCharacterName = (filename) => {
     if (!filename) return ''
@@ -35,11 +49,12 @@ export default function CharacterScan() {
       setUploadedFileName(file.name)
       setSelectedCharacter(null)
       setError(null)
+      setAnalysisComplete(false) // Reset analysis state
     }
     reader.readAsDataURL(file)
   }
 
-  // Forge the image
+  // Forge the image / Initialize Analysis
   const handleForge = async () => {
     if (!uploadedImage && !selectedCharacter) {
       setError('INITIALIZATION ERROR: No Subject Detected')
@@ -51,32 +66,75 @@ export default function CharacterScan() {
 
     try {
       const nameFromFile = formatCharacterName(uploadedFileName)
-      const characterName = uploadedImage ? nameFromFile : selectedCharacter
-      const desc = await generateCharacterProfile(characterName || 'Unknown Character')
+      const characterName = selectedCharacter || (uploadedFileName ? nameFromFile : 'Unknown Character')
+
+      // 1. Generate Description & Tiers in parallel (or sequential if dependency needed)
+      console.log("Starting analysis for:", characterName)
+
+      const MIN_LOADING_TIME = 2000 // 2 seconds
+      const [desc, tiers] = await Promise.all([
+        generateCharacterProfile(characterName),
+        generateCosplayTiers(characterName),
+        new Promise(resolve => setTimeout(resolve, MIN_LOADING_TIME))
+      ])
 
       const viz = await generateDALLEVisualization(desc)
 
-      // Store in sessionStorage
-      sessionStorage.setItem('cosplayDescription', JSON.stringify({
-        description: desc,
-        visualization: viz,
-        uploadedImage,
-        character: characterName || selectedCharacter,
-        filename: uploadedFileName
-      }))
+      // Determine image to show (Upload OR Preset Image)
+      let displayImage = uploadedImage
+      if (!displayImage && selectedCharacter) {
+        const preset = characterData.find(c => c.name === selectedCharacter)
+        if (preset) displayImage = preset.img
+      }
 
-      navigate('/blueprint')
+      setAnalysisData({
+        character: characterName,
+        description: desc,
+        tiers: tiers,
+        visualization: viz,
+        uploadedImage: displayImage, // Use the resolved image
+        filename: uploadedFileName
+      })
+
+      // Introduce a slight artificial delay if API is too fast, to show the cool K2 animation
+      // But if it took long enough, show immediately.
+      // For now, let's just wait a moment to ensure user sees "Thinking"
+      // actually, just proceed.
+
+      setAnalysisComplete(true)
     } catch (err) {
+      console.error(err)
       setError(`SYSTEM FAILURE: ${err instanceof Error ? err.message : 'Unknown error'}`)
     } finally {
       setIsForging(false)
     }
   }
 
+  const handleTierSelect = (tierId, items) => {
+    // Save selected build to session and navigate
+    sessionStorage.setItem('cosplayBuild', JSON.stringify({
+      ...analysisData,
+      selectedTier: tierId,
+      items: items
+    }))
+
+    // Also save legacy format for compatibility if needed, but 'cosplayBuild' is our new gold standard
+    sessionStorage.setItem('cosplayDescription', JSON.stringify({
+      description: analysisData.description,
+      visualization: analysisData.visualization,
+      uploadedImage: analysisData.uploadedImage,
+      character: analysisData.character,
+      items: items // Pass specific items
+    }))
+
+    navigate('/tryonlab')
+  }
+
   const handlePresetClick = (characterName) => {
     setSelectedCharacter(characterName)
     setUploadedImage(null)
     setError(null)
+    setAnalysisComplete(false)
   }
 
   const characterData = [
@@ -90,9 +148,37 @@ export default function CharacterScan() {
 
   const displayList = [...characterData, ...characterData]
 
+  // RENDER: Loading State (K2 Animation)
+  if (isForging) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4">
+        <div className="w-full max-w-2xl">
+          <h2 className="text-neon-cyan font-mono text-xl mb-6 text-center animate-pulse">
+            INITIATING K2 REASONING ENGINE...
+          </h2>
+          <K2ThinkFlow />
+        </div>
+      </div>
+    )
+  }
+
+  // RENDER: Analysis Results (Tier Selection)
+  if (analysisComplete && analysisData) {
+    return (
+      <div className="min-h-screen bg-slate-950 pt-20 pb-20">
+        {/* Re-using header just for consistency or a simplified back button */}
+        <AnalysisResult
+          analysisData={analysisData}
+          onSelectTier={handleTierSelect}
+          onBack={() => setAnalysisComplete(false)}
+        />
+      </div>
+    )
+  }
+
+  // RENDER: Initial Scan View
   return (
     <div className="w-full max-w-7xl mx-auto px-4 pt-6 pb-20">
-
       {/* Header */}
       <header className="flex items-center justify-between mb-16">
         <div className="flex items-center gap-3">
@@ -102,9 +188,33 @@ export default function CharacterScan() {
           </div>
         </div>
         <div className="flex items-center gap-4">
-          <div className="px-3 py-1 border border-neon-cyan/30 bg-neon-cyan/10 rounded text-xs font-mono text-neon-cyan">
+          <div className="px-3 py-1 border border-neon-cyan/30 bg-neon-cyan/10 rounded text-xs font-mono text-neon-cyan hidden md:block">
             SYSTEM: ONLINE
           </div>
+
+          {isAuthenticated ? (
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 px-3 py-1 border border-neon-purple/30 bg-neon-purple/10 rounded text-xs font-mono text-neon-purple">
+                <User className="w-3 h-3" />
+                ADMIN_USER
+              </div>
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-2 text-slate-400 hover:text-white transition text-xs font-mono"
+              >
+                <LogOut className="w-4 h-4" />
+                LOGOUT
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => navigate('/auth', { state: { from: '/' } })}
+              className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-neon-cyan text-white rounded transition text-xs font-mono group"
+            >
+              <LogIn className="w-4 h-4 group-hover:text-neon-cyan transition" />
+              SIGN_IN
+            </button>
+          )}
         </div>
       </header>
 
@@ -174,12 +284,6 @@ export default function CharacterScan() {
                 </div>
               )}
             </button>
-
-            {error && (
-              <div className="p-3 bg-red-900/20 border border-red-500/50 text-red-400 font-mono text-xs rounded">
-                [{error}]
-              </div>
-            )}
           </div>
         </div>
 
